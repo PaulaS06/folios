@@ -1,3 +1,11 @@
+/* ==========================================================================
+   FOLIOS — Plataforma para Intercambio de Apuntes Universitarios
+   Hoja de estilos global (versión simple)
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Variables base
+   -------------------------------------------------------------------------- */
 :root {
   --color-primary: #2F6FED;
   --color-primary-dark: #1F55C4;
@@ -142,6 +150,10 @@ p {
   gap: 0.75rem;
 }
 
+.hidden-block {
+  display: none !important;
+}
+
 /* --------------------------------------------------------------------------
    5. Hero
    -------------------------------------------------------------------------- */
@@ -214,7 +226,199 @@ p {
 }
 
 /* --------------------------------------------------------------------------
-   7. Footer
+   7. Formularios (registro, login, subir documento)
+   -------------------------------------------------------------------------- */
+.form-section {
+  padding: 3rem 0;
+}
+
+.form-card {
+  max-width: 480px;
+  margin: 0 auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 2rem;
+}
+
+.form-card h1 {
+  font-size: 1.6rem;
+  text-align: center;
+}
+
+.form-card__subtitle {
+  display: block;
+  text-align: center;
+  color: var(--color-text-light);
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+}
+
+.form-group {
+  margin-bottom: 1.2rem;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-bottom: 0.4rem;
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-family: var(--font-base);
+  font-size: 0.95rem;
+  color: var(--color-text);
+  background-color: #fff;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.form-error {
+  display: block;
+  color: #D64545;
+  font-size: 0.8rem;
+  margin-top: 0.3rem;
+  min-height: 1rem;
+}
+
+.form-card .btn {
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+.form-footer-text {
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--color-text-light);
+  margin-top: 1.25rem;
+}
+
+.form-footer-text a {
+  color: var(--color-primary);
+  font-weight: 500;
+}
+
+/* --------------------------------------------------------------------------
+   8. Documentos (listado, buscador y filtros)
+   -------------------------------------------------------------------------- */
+.docs-header {
+  padding: 2.5rem 0 1.5rem 0;
+}
+
+.docs-header__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.docs-header__top h1 {
+  font-size: 1.8rem;
+  margin-bottom: 0;
+}
+
+.docs-filtros {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.docs-filtros input,
+.docs-filtros select {
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-family: var(--font-base);
+  font-size: 0.9rem;
+  color: var(--color-text);
+}
+
+.docs-filtros input {
+  flex: 1;
+  min-width: 200px;
+}
+
+.docs-list {
+  padding-bottom: 3.5rem;
+}
+
+.docs-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+}
+
+.doc-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.doc-card__categoria {
+  font-size: 0.75rem;
+  color: var(--color-primary);
+  font-weight: 500;
+}
+
+.doc-card__nombre {
+  font-size: 1.05rem;
+  margin-bottom: 0.1rem;
+}
+
+.doc-card__meta {
+  font-size: 0.85rem;
+  color: var(--color-text-light);
+}
+
+.doc-card__rating {
+  font-size: 0.85rem;
+  color: var(--color-text-light);
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.2rem;
+}
+
+.doc-card__rating i {
+  color: #F5A623;
+}
+
+.doc-card__acciones {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+}
+
+.doc-card__acciones .btn {
+  flex: 1;
+  text-align: center;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+}
+
+.docs-vacio {
+  text-align: center;
+  color: var(--color-text-light);
+  padding: 2rem 0;
+  display: none;
+}
+
+/* --------------------------------------------------------------------------
+   9. Footer
    -------------------------------------------------------------------------- */
 .footer {
   border-top: 1px solid var(--color-border);
@@ -237,7 +441,7 @@ p {
 }
 
 /* --------------------------------------------------------------------------
-   8. Responsive
+   10. Responsive
    -------------------------------------------------------------------------- */
 @media (max-width: 768px) {
   .navbar__toggle {
@@ -269,11 +473,23 @@ p {
   .ventajas__grid {
     grid-template-columns: 1fr 1fr;
   }
+
+  .docs-grid {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 @media (max-width: 480px) {
   .ventajas__grid {
     grid-template-columns: 1fr;
+  }
+
+  .docs-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-card {
+    padding: 1.5rem;
   }
 
   .hero__buttons .btn {
