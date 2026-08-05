@@ -1,4 +1,4 @@
-/* ==========================================================================
+ /* ==========================================================================
    FOLIOS — Plataforma para Intercambio de Apuntes Universitarios
    Hoja de estilos global (versión simple)
    ========================================================================== */
@@ -65,16 +65,23 @@ p {
   display: flex;
   min-height: 100vh;
   background-color: var(--color-bg-soft);
+  overflow: hidden;
 }
 
 .sidebar {
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
   width: 280px;
+  min-width: 280px;
+  height: 100vh;
   background: linear-gradient(180deg, #f8fbff 0%, #eef4ff 100%);
   border-right: 1px solid var(--color-border);
   padding: 1.5rem 1rem;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  flex-shrink: 0;
 }
 
 .sidebar__profile {
@@ -147,9 +154,12 @@ p {
 
 .content-area {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   background-color: var(--color-bg);
+  overflow-y: auto;
+  height: 100vh;
 }
 
 .container {
@@ -513,18 +523,19 @@ p {
    -------------------------------------------------------------------------- */
 .footer {
   border-top: 1px solid var(--color-border);
-  padding: 2rem 0;
+  padding: 1rem 0;
   background-color: var(--color-bg-soft);
   text-align: center;
   color: var(--color-text-light);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
+  margin-top: auto;
 }
 
 .footer__links {
   display: flex;
   justify-content: center;
-  gap: 1.5rem;
-  margin-bottom: 1rem;
+  gap: 1rem;
+  margin-bottom: 0.45rem;
 }
 
 .footer__links a:hover {
