@@ -1,0 +1,287 @@
+:root {
+  --color-primary: #2F6FED;
+  --color-primary-dark: #1F55C4;
+  --color-text: #222831;
+  --color-text-light: #6B7280;
+  --color-bg: #FFFFFF;
+  --color-bg-soft: #F5F7FA;
+  --color-border: #E3E6EA;
+
+  --font-base: 'Poppins', Arial, sans-serif;
+
+  --radius: 8px;
+  --container-w: 1100px;
+}
+
+/* --------------------------------------------------------------------------
+   2. Reset simple
+   -------------------------------------------------------------------------- */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-base);
+  color: var(--color-text);
+  background-color: var(--color-bg);
+  line-height: 1.6;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+h1, h2, h3 {
+  margin: 0 0 0.5rem 0;
+  font-weight: 600;
+}
+
+p {
+  margin: 0;
+}
+
+.container {
+  max-width: var(--container-w);
+  margin: 0 auto;
+  padding: 0 1.25rem;
+}
+
+/* --------------------------------------------------------------------------
+   3. Botones
+   -------------------------------------------------------------------------- */
+.btn {
+  display: inline-block;
+  padding: 0.65rem 1.4rem;
+  border-radius: var(--radius);
+  font-weight: 500;
+  font-size: 0.95rem;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background-color: var(--color-primary);
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background-color: var(--color-primary-dark);
+}
+
+.btn-outline {
+  background-color: transparent;
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+
+.btn-outline:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+/* --------------------------------------------------------------------------
+   4. Navbar
+   -------------------------------------------------------------------------- */
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.navbar__logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.navbar__logo img {
+  width: 28px;
+  height: 28px;
+}
+
+.navbar__toggle {
+  display: none;
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 0.4rem 0.6rem;
+  font-size: 1.2rem;
+}
+
+.navbar__links {
+  display: flex;
+  gap: 1.5rem;
+  font-size: 0.95rem;
+  color: var(--color-text-light);
+}
+
+.navbar__links a:hover {
+  color: var(--color-primary);
+}
+
+.navbar__buttons {
+  display: flex;
+  gap: 0.75rem;
+}
+
+/* --------------------------------------------------------------------------
+   5. Hero
+   -------------------------------------------------------------------------- */
+.hero {
+  padding: 4rem 0;
+  background-color: var(--color-bg-soft);
+  text-align: center;
+}
+
+.hero h1 {
+  font-size: 2.2rem;
+  max-width: 600px;
+  margin: 0 auto 1rem auto;
+}
+
+.hero p {
+  color: var(--color-text-light);
+  max-width: 550px;
+  margin: 0 auto 1.5rem auto;
+}
+
+.hero__buttons {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+/* --------------------------------------------------------------------------
+   6. Ventajas
+   -------------------------------------------------------------------------- */
+.ventajas {
+  padding: 4rem 0;
+}
+
+.ventajas h2 {
+  text-align: center;
+  font-size: 1.8rem;
+  margin-bottom: 2.5rem;
+}
+
+.ventajas__grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem;
+}
+
+.ventaja-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  text-align: left;
+}
+
+.ventaja-card i {
+  font-size: 1.6rem;
+  color: var(--color-primary);
+  margin-bottom: 0.75rem;
+  display: block;
+}
+
+.ventaja-card h3 {
+  font-size: 1.05rem;
+  margin-bottom: 0.5rem;
+}
+
+.ventaja-card p {
+  color: var(--color-text-light);
+  font-size: 0.9rem;
+}
+
+/* --------------------------------------------------------------------------
+   7. Footer
+   -------------------------------------------------------------------------- */
+.footer {
+  border-top: 1px solid var(--color-border);
+  padding: 2rem 0;
+  background-color: var(--color-bg-soft);
+  text-align: center;
+  color: var(--color-text-light);
+  font-size: 0.9rem;
+}
+
+.footer__links {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.footer__links a:hover {
+  color: var(--color-primary);
+}
+
+/* --------------------------------------------------------------------------
+   8. Responsive
+   -------------------------------------------------------------------------- */
+@media (max-width: 768px) {
+  .navbar__toggle {
+    display: inline-block;
+  }
+
+  .navbar__links,
+  .navbar__buttons {
+    display: none;
+    width: 100%;
+  }
+
+  .navbar.is-open {
+    flex-wrap: wrap;
+  }
+
+  .navbar.is-open .navbar__links,
+  .navbar.is-open .navbar__buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: 1rem;
+  }
+
+  .hero h1 {
+    font-size: 1.7rem;
+  }
+
+  .ventajas__grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .ventajas__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hero__buttons .btn {
+    width: 100%;
+  }
+
+  .footer__links {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}
