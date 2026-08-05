@@ -15,72 +15,114 @@
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-
-  <!-- ==================== NAVBAR ==================== -->
-  <header>
-    <nav class="navbar container">
-      <a href="index.html" class="navbar__logo">
-        <img src="assets/logo.png" alt="Logo Folios">
-        Folios
-      </a>
-
-      <button type="button" class="navbar__toggle" aria-label="Abrir menú">
-        <i class="bi bi-list"></i>
-      </button>
-
-      <div class="navbar__buttons" id="navbarLoggedOut">
-        <a href="login.html" class="btn btn-outline">Iniciar sesión</a>
-        <a href="registro.html" class="btn btn-primary">Registrarse</a>
-      </div>
-      <div class="navbar__buttons hidden-block" id="navbarLoggedIn">
-        <a href="perfil.html" class="btn btn-outline">Mi perfil</a>
-        <button type="button" class="btn btn-primary" id="btnCerrarSesion">Cerrar sesión</button>
-      </div>
-    </nav>
-  </header>
-
-  <main>
-
-    <!-- ==================== ENCABEZADO + FILTROS ==================== -->
-    <section class="docs-header">
-      <div class="container">
-        <div class="docs-header__top">
-          <h1>Explorar apuntes</h1>
-          <a href="subir-documento.html" class="btn btn-primary">Subir documento</a>
-        </div>
-        <div class="docs-filtros">
-          <input type="text" id="buscador" placeholder="Buscar por nombre, materia o autor...">
-          <select id="filtroMateria">
-            <option value="">Todas las materias</option>
-          </select>
-          <select id="filtroCategoria">
-            <option value="">Todas las categorías</option>
-          </select>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar__profile">
+        <div class="sidebar__avatar">FS</div>
+        <div>
+          <h2>Fabián S.</h2>
+          <p>Estudiante de Ingeniería</p>
         </div>
       </div>
-    </section>
 
-    <!-- ==================== LISTADO ==================== -->
-    <section class="docs-list">
-      <div class="container">
-        <div class="docs-grid" id="docsGrid"></div>
-        <p class="docs-vacio" id="docsVacio">No se encontraron documentos con esos filtros.</p>
+      <nav class="sidebar__nav" aria-label="Navegación lateral">
+        <a href="documentos.html" class="sidebar__link active">
+          <i class="bi bi-journal-text"></i>
+          <span>Explorar apuntes</span>
+        </a>
+        <a href="documentos.html" class="sidebar__link">
+          <i class="bi bi-cloud-arrow-up"></i>
+          <span>Subir documento</span>
+        </a>
+        <a href="documentos.html" class="sidebar__link">
+          <i class="bi bi-files"></i>
+          <span>Mis documentos</span>
+        </a>
+        <a href="documentos.html" class="sidebar__link">
+          <i class="bi bi-bookmark-heart"></i>
+          <span>Guardados</span>
+        </a>
+        <a href="documentos.html" class="sidebar__link">
+          <i class="bi bi-question-circle"></i>
+          <span>Ayuda</span>
+        </a>
+            <div class="navbar__buttons hidden-block" id="navbarLoggedIn">
+            <button type="button" class="btn btn-primary" id="btnCerrarSesion">Cerrar sesión</button>
+          </div>
+      </nav>
+
+      <div class="sidebar__footer">
+        <button type="button" class="btn btn-outline sidebar__logout" id="btnCerrarSesionSidebar">
+          <i class="bi bi-box-arrow-right"></i>
+          Cerrar sesión
+        </button>
       </div>
-    </section>
+    </aside>
 
-  </main>
+    <div class="content-area">
+      <!-- ==================== NAVBAR ==================== -->
+      <header>
+        <nav class="navbar container">
+          <a href="index.html" class="navbar__logo">
+            <img src="assets/logo.png" alt="Logo Folios">
+            Folios
+          </a>
 
-  <!-- ==================== FOOTER ==================== -->
-  <footer class="footer">
-    <div class="container">
-      <ul class="footer__links">
-        <li><a href="index.html">Inicio</a></li>
-        <li><a href="login.html">Iniciar sesión</a></li>
-        <li><a href="registro.html">Registrarse</a></li>
-      </ul>
-      <p>&copy; 2026 Folios. Proyecto académico.</p>
+          <button type="button" class="navbar__toggle" aria-label="Abrir menú">
+            <i class="bi bi-list"></i>
+          </button>
+
+          <div class="navbar__buttons" id="navbarLoggedOut">
+            <a href="login.html" class="btn btn-outline">Iniciar sesión</a>
+            <a href="registro.html" class="btn btn-primary">Registrarse</a>
+          </div>
+        </nav>
+      </header>
+
+      <main>
+        <!-- ==================== ENCABEZADO + FILTROS ==================== -->
+        <section class="docs-header">
+          <div class="container">
+            <div class="docs-header__top">
+              <h1>Explorar apuntes</h1>
+              <a href="subir-documento.html" class="btn btn-primary">Subir documento</a>
+            </div>
+            <div class="docs-filtros">
+              <input type="text" id="buscador" placeholder="Buscar por nombre, materia o autor...">
+              <select id="filtroMateria">
+                <option value="">Todas las materias</option>
+              </select>
+              <select id="filtroCategoria">
+                <option value="">Todas las categorías</option>
+              </select>
+  
+            </div>
+          </div>
+          
+        </section>
+
+        <!-- ==================== LISTADO ==================== -->
+        <section class="docs-list">
+          <div class="container">
+            <div class="docs-grid" id="docsGrid"></div>
+            <p class="docs-vacio" id="docsVacio">No se encontraron documentos con esos filtros.</p>
+          </div>
+        </section>
+      </main>
+
+      <!-- ==================== FOOTER ==================== -->
+      <footer class="footer">
+        <div class="container">
+          <ul class="footer__links">
+            <li><a href="index.html">Inicio</a></li>
+            <li><a href="login.html">Iniciar sesión</a></li>
+            <li><a href="registro.html">Registrarse</a></li>
+          </ul>
+          <p>&copy; 2026 Folios. Proyecto académico.</p>
+        </div>
+      </footer>
     </div>
-  </footer>
+  </div>
 
   <script src="js/app.js"></script>
 </body>

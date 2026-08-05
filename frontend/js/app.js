@@ -109,12 +109,20 @@ function initSesion() {
   loggedOut.classList.toggle('hidden-block', haySesion);
   loggedIn.classList.toggle('hidden-block', !haySesion);
 
+  const cerrarSesion = () => {
+    localStorage.removeItem('foliosSesion');
+    window.location.href = 'index.html';
+  };
+
   const btnCerrar = document.getElementById('btnCerrarSesion');
+  const btnCerrarSidebar = document.getElementById('btnCerrarSesionSidebar');
+
   if (btnCerrar) {
-    btnCerrar.addEventListener('click', () => {
-      localStorage.removeItem('foliosSesion');
-      window.location.href = 'index.html';
-    });
+    btnCerrar.addEventListener('click', cerrarSesion);
+  }
+
+  if (btnCerrarSidebar) {
+    btnCerrarSidebar.addEventListener('click', cerrarSesion);
   }
 }
 
