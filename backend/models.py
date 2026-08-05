@@ -5,7 +5,7 @@ from database import Base
 class Programa(Base):
     __tablename__ = "programa"
 
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key = True)
     nombre = Column(String)
     facultad = Column(String)
 
@@ -13,7 +13,7 @@ class Programa(Base):
 class Estudiante(Base):
     __tablename__ = "estudiante"
 
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key = True)
     nombre = Column(String)
     correo = Column(String)
     contrasena = Column("contraseña", String)
@@ -25,7 +25,7 @@ class Estudiante(Base):
 class Materia(Base):
     __tablename__ = "materia"
 
-    codigo = Column(Integer, primary_key=True)
+    codigo = Column(Integer, primary_key = True)
     nombre = Column(String)
     id_programa = Column(Integer, ForeignKey("programa.id"))
 
@@ -33,14 +33,14 @@ class Materia(Base):
 class Categoria(Base):
     __tablename__ = "categoria"
 
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key = True)
     nombre = Column(String)
 
 
 class Documento(Base):
     __tablename__ = "documento"
 
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key = True)
     nombre = Column(String)
     descripcion = Column(Text)
     enlace_archivo = Column(String)
