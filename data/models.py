@@ -1,5 +1,5 @@
-from sqlalchemy import Column, Integer, String, Text, Date, Numeric, ForeignKey
-from database import Base
+from sqlalchemy import Column, Integer, String, Text, Date, Numeric, ForeignKey, UniqueConstraint
+from data.database import Base
 
 
 class Programa(Base):
@@ -50,3 +50,19 @@ class Documento(Base):
     fecha_subida = Column(Date)
     descargas_totales = Column(Integer)
     id_categoria = Column(Integer, ForeignKey("categoria.id"))
+
+
+class Accion(Base):
+    """Calificación y/o comentario de un estudiante sobre un documento."""
+    __tablename__ = "accion"
+    # Refleja la restricción de la BD: un registro por (estudiante, documento).
+    __table_args__ = (
+        UniqueConstraint("id_estudiante", "id_documento", name = "uq_accion_estudiante_documento"),
+    )
+
+    id = Column(Integer, primary_key = True)
+    valor = Column(Numeric(2, 1))          # 1 a 5; puede ser NULL si solo comenta
+    comentario = Column(Text)              # puede ser NULL si solo califica
+    fecha_calificacion = Column(Date)      # la BD la llena con CURRENT_DATE
+    id_estudiante = Column(Integer, ForeignKey("estudiante.id"))
+    id_documento = Column(Integer, ForeignKey("documento.id", ondelete = "CASCADE"))
