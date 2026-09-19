@@ -18,6 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   initRegistroForm();
   initLoginForm();
+  initSubirDocumento();
   initSesion();
   initDocumentos();
 });
@@ -58,6 +59,10 @@ const CAMPO_A_ERROR = {
   contrasena: 'errorContrasena',
   semestre: 'errorSemestre',
   programa: 'errorPrograma',
+  descripcion: 'errorDescripcion',
+  id_materia: 'errorMateria',
+  id_categoria: 'errorCategoria',
+  enlace: 'errorEnlace',
 };
 
 function mostrarError(idElemento, mensaje) {
@@ -100,10 +105,16 @@ function validarCampos(campos) {
   return esValido;
 }
 
+/** Crea un <option>. Usa textContent (no innerHTML): el texto nunca se interpreta como HTML. */
+function crearOpcion(valor, texto) {
+  const option = document.createElement('option');
+  option.value = valor;
+  option.textContent = texto;
+  return option;
+}
+
 /**
  * Llena un <select> con <optgroup>: agrupa los elementos según grupoDe().
- * Se crean nodos con textContent (no innerHTML), así un nombre con caracteres
- * raros o etiquetas HTML se muestra como texto y nunca se ejecuta.
  */
 function llenarSelectAgrupado(select, elementos, grupoDe, valorDe, textoDe) {
   const grupos = new Map();
@@ -117,10 +128,7 @@ function llenarSelectAgrupado(select, elementos, grupoDe, valorDe, textoDe) {
     const optgroup = document.createElement('optgroup');
     optgroup.label = nombreGrupo;
     lista.forEach((elemento) => {
-      const option = document.createElement('option');
-      option.value = valorDe(elemento);
-      option.textContent = textoDe(elemento);
-      optgroup.appendChild(option);
+      optgroup.appendChild(crearOpcion(valorDe(elemento), textoDe(elemento)));
     });
     select.appendChild(optgroup);
   });
@@ -236,6 +244,85 @@ function initLoginForm() {
       return;
     }
     mostrarErrorServidor(resp);
+  });
+}
+
+/* --------------------------------------------------------------------------
+   Subir documento
+   -------------------------------------------------------------------------- */
+async function cargarCatalogosDocumento(form) {
+  const [materias, categorias] = await Promise.all([
+    llamarApi('/api/materias'),
+    llamarApi('/api/categorias'),
+  ]);
+
+  if (materias.ok) {
+    // Todas las materias, agrupadas por programa (decisión del equipo)
+    llenarSelectAgrupado(
+      form.materia,
+      materias.datos,
+      (materia) => materia.programa,
+      (materia) => materia.codigo,
+      (materia) => materia.nombre
+    );
+  } else {
+    mostrarError('errorMateria', 'No se pudieron cargar las materias. Recarga la página.');
+  }
+
+  if (categorias.ok) {
+    categorias.datos.forEach((categoria) => {
+      form.categoria.appendChild(crearOpcion(categoria.id, categoria.nombre));
+    });
+  } else {
+    mostrarError('errorCategoria', 'No se pudieron cargar las categorías. Recarga la página.');
+  }
+}
+
+function initSubirDocumento() {
+  const form = document.getElementById('formDocumento');
+  if (!form) return;
+
+  cargarCatalogosDocumento(form);
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    mostrarError('errorGeneral', '');
+
+    const esValido = validarCampos([
+      { input: form.nombre, error: 'errorNombre', mensaje: 'Ingresa el nombre del documento.' },
+      { input: form.materia, error: 'errorMateria', mensaje: 'Selecciona la materia.' },
+      { input: form.categoria, error: 'errorCategoria', mensaje: 'Selecciona la categoría.' },
+      { input: form.enlace, error: 'errorEnlace', mensaje: 'Ingresa un enlace válido (empieza por http:// o https://).' },
+    ]);
+    mostrarError('errorDescripcion', '');
+    if (!esValido) return;
+
+    const boton = form.querySelector('button[type="submit"]');
+    boton.disabled = true;
+
+    const resp = await llamarApi('/api/documentos', {
+      metodo: 'POST',
+      cuerpo: {
+        nombre: form.nombre.value.trim(),
+        descripcion: form.descripcion.value,          // vacío = sin descripción (el backend lo normaliza)
+        id_materia: Number(form.materia.value),       // los selects entregan texto; la API espera números
+        id_categoria: Number(form.categoria.value),
+        enlace: form.enlace.value.trim(),
+      },
+    });
+
+    boton.disabled = false;
+
+    if (resp.ok) {
+      alert('Documento publicado correctamente.');
+      form.reset();
+      return;
+    }
+    if (resp.estado === 401) {          // la sesión venció mientras llenabas el formulario
+      terminarSesion('login.html');
+      return;
+    }
+    mostrarErrorServidor(resp);         // 400 (materia/categoría inexistente), 422, sin conexión...
   });
 }
 

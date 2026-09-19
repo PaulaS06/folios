@@ -1,5 +1,6 @@
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
 from datetime import date
+from urllib.parse import urlparse
 
 DOMINIO_INSTITUCIONAL = "@soyudemedellin.edu.co"   # incluye la @ a propósito
 MAX_BYTES_CONTRASENA = 72                          # límite de bcrypt (en bytes, no en caracteres)
@@ -85,12 +86,6 @@ class EstudianteRespuesta(BaseModel):
     puntaje: int
 
 
-class TokenRespuesta(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
-    estudiante: EstudianteRespuesta
-
-
 # ---------- acciones (calificar y/o comentar) ----------
 
 class AccionCrear(BaseModel):
@@ -123,8 +118,17 @@ class AccionRespuesta(BaseModel):
     id_documento: int
 
 
+class TokenRespuesta(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    estudiante: EstudianteRespuesta
+
+
+# ---------- catálogos ----------
+
 class ProgramaRespuesta(BaseModel):
     model_config = ConfigDict(from_attributes=True)
+
     id: int
     nombre: str
     facultad: str
@@ -132,6 +136,7 @@ class ProgramaRespuesta(BaseModel):
 
 class CategoriaRespuesta(BaseModel):
     model_config = ConfigDict(from_attributes=True)
+
     id: int
     nombre: str
 
@@ -140,3 +145,51 @@ class MateriaRespuesta(BaseModel):
     codigo: int
     nombre: str
     programa: str   # nombre del programa al que pertenece
+
+
+# ---------- documentos ----------
+
+class DocumentoCrear(BaseModel):
+    """Lo que envía el front al publicar. El autor NO viene aquí: sale del token."""
+    nombre: str = Field(min_length=1, max_length=150)
+    descripcion: str | None = None            # opcional (decisión del equipo)
+    id_materia: int = Field(ge=1)
+    id_categoria: int = Field(ge=1)
+    enlace: str = Field(min_length=1, max_length=255)
+
+    @field_validator("nombre", "enlace", mode="before")
+    @classmethod
+    def _limpiar(cls, v):
+        return limpiar_texto(v)
+
+    @field_validator("descripcion", mode="before")
+    @classmethod
+    def _descripcion_vacia_es_none(cls, v):
+        v = limpiar_texto(v)
+        return v or None
+
+    @field_validator("enlace")
+    @classmethod
+    def _enlace_http(cls, v):
+        # El enlace se mostrará como <a href="...">. Aceptar "javascript:..."
+        # permitiría ejecutar código al hacer clic, así que solo http y https.
+        partes = urlparse(v)
+        if partes.scheme not in ("http", "https") or not partes.netloc:
+            raise ValueError("El enlace debe empezar por http:// o https:// y ser una dirección válida.")
+        return v
+
+
+class DocumentoRespuesta(BaseModel):
+    """Un documento tal como lo consume el front (con los nombres ya resueltos)."""
+    id: int
+    nombre: str
+    descripcion: str | None
+    enlace: str
+    id_materia: int
+    materia: str
+    id_categoria: int
+    categoria: str
+    id_autor: int
+    autor: str
+    fecha: date
+    calificacion: float
