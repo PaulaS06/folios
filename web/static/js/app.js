@@ -100,12 +100,55 @@ function validarCampos(campos) {
   return esValido;
 }
 
+/**
+ * Llena un <select> con <optgroup>: agrupa los elementos según grupoDe().
+ * Se crean nodos con textContent (no innerHTML), así un nombre con caracteres
+ * raros o etiquetas HTML se muestra como texto y nunca se ejecuta.
+ */
+function llenarSelectAgrupado(select, elementos, grupoDe, valorDe, textoDe) {
+  const grupos = new Map();
+  elementos.forEach((elemento) => {
+    const grupo = grupoDe(elemento);
+    if (!grupos.has(grupo)) grupos.set(grupo, []);
+    grupos.get(grupo).push(elemento);
+  });
+
+  grupos.forEach((lista, nombreGrupo) => {
+    const optgroup = document.createElement('optgroup');
+    optgroup.label = nombreGrupo;
+    lista.forEach((elemento) => {
+      const option = document.createElement('option');
+      option.value = valorDe(elemento);
+      option.textContent = textoDe(elemento);
+      optgroup.appendChild(option);
+    });
+    select.appendChild(optgroup);
+  });
+}
+
 /* --------------------------------------------------------------------------
    Registro
    -------------------------------------------------------------------------- */
+async function cargarProgramas(form) {
+  const resp = await llamarApi('/api/programas');
+  if (!resp.ok) {
+    mostrarError('errorPrograma', 'No se pudieron cargar los programas. Recarga la página.');
+    return;
+  }
+  llenarSelectAgrupado(
+    form.programa,
+    resp.datos,
+    (programa) => programa.facultad,
+    (programa) => programa.nombre,
+    (programa) => programa.nombre
+  );
+}
+
 function initRegistroForm() {
   const form = document.getElementById('formRegistro');
   if (!form) return;
+
+  cargarProgramas(form);   // los programas vienen de la base de datos, no del HTML
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();

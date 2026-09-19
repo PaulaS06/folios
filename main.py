@@ -4,6 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from catalogos import router as catalogos_router
 from data.database import get_db
 from data.models import Estudiante, Programa
 from data.schemas import (
@@ -26,6 +27,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+app.include_router(catalogos_router)
 
 
 @app.post(

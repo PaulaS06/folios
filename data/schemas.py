@@ -121,3 +121,22 @@ class AccionRespuesta(BaseModel):
     fecha_calificacion: date
     id_estudiante: int
     id_documento: int
+
+
+class ProgramaRespuesta(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    nombre: str
+    facultad: str
+
+
+class CategoriaRespuesta(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    nombre: str
+
+
+class MateriaRespuesta(BaseModel):
+    codigo: int
+    nombre: str
+    programa: str   # nombre del programa al que pertenece
