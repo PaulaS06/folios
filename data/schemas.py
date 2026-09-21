@@ -108,14 +108,27 @@ class AccionCrear(BaseModel):
 
 
 class AccionRespuesta(BaseModel):
+    """La calificación/comentario del estudiante autenticado sobre el documento
+    que consultó. Devuelve id_documento para que el front sepa a cuál pertenece,
+    aunque no lo haya enviado (ese id viene siempre de la URL, nunca del cliente)."""
     model_config = ConfigDict(from_attributes=True)
 
     id: int
     valor: float | None
     comentario: str | None
     fecha_calificacion: date
-    id_estudiante: int
     id_documento: int
+
+
+class ComentarioRespuesta(BaseModel):
+    """Una fila de la lista pública de comentarios de un documento: quién
+    comentó y qué dijo. No incluye id_estudiante: nadie necesita saberlo
+    salvo para comprobar autoría, y eso ya lo hace el servidor."""
+    id: int
+    autor: str
+    valor: float | None
+    comentario: str | None
+    fecha: date
 
 
 class TokenRespuesta(BaseModel):

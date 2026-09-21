@@ -5,8 +5,8 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from data.database import get_db
-from data.models import Documento, Materia, Categoria, Estudiante
-from data.schemas import DocumentoCrear, DocumentoRespuesta
+from data.models import Documento, Materia, Categoria, Estudiante, Accion
+from data.schemas import DocumentoCrear, DocumentoRespuesta, AccionCrear, AccionRespuesta, ComentarioRespuesta
 from dependencies import estudiante_actual
 
 router = APIRouter(prefix="/api/documentos", tags=["Documentos"])
@@ -210,3 +210,87 @@ def eliminar_documento(
     db.delete(documento)
     db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.get("/{id_documento}/mi-calificacion", response_model=AccionRespuesta | None)
+def ver_mi_calificacion(
+    id_documento: int = Path(ge=1),
+    estudiante: Estudiante = Depends(estudiante_actual),
+    db: Session = Depends(get_db),
+):
+    """La calificación/comentario del estudiante autenticado sobre este
+    documento, si la tiene. Sirve para precargar el formulario cuando ya
+    calificó antes (es una edición, no una calificación nueva)."""
+    obtener_documento_o_404(db, id_documento)
+    return db.scalar(
+        select(Accion).where(
+            Accion.id_estudiante == estudiante.id,
+            Accion.id_documento == id_documento,
+        )
+    )
+
+
+@router.post("/{id_documento}/calificar", response_model=AccionRespuesta)
+def calificar_documento(
+    datos: AccionCrear,
+    id_documento: int = Path(ge=1),
+    estudiante: Estudiante = Depends(estudiante_actual),
+    db: Session = Depends(get_db),
+):
+    documento = obtener_documento_o_404(db, id_documento)
+
+    # RN-04: un estudiante no puede calificar ni comentar su propio documento.
+    if documento.id_estudiante == estudiante.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No puedes calificar ni comentar tu propio documento.",
+        )
+
+    # "Upsert": si ya existe una calificación de este estudiante sobre este
+    # documento, se actualiza (el documento consolidado dice que solo puede
+    # haber un registro por estudiante y documento); si no existe, se crea.
+    # Los triggers de la BD (promedio y puntaje) reaccionan a cualquiera de
+    # los dos casos.
+    accion = db.scalar(
+        select(Accion).where(
+            Accion.id_estudiante == estudiante.id,
+            Accion.id_documento == id_documento,
+        )
+    )
+    if accion is None:
+        accion = Accion(id_estudiante=estudiante.id, id_documento=id_documento)
+        db.add(accion)
+
+    accion.valor = datos.valor
+    accion.comentario = datos.comentario
+    db.commit()
+    db.refresh(accion)
+
+    return accion
+
+
+@router.get("/{id_documento}/comentarios", response_model=list[ComentarioRespuesta])
+def listar_comentarios(
+    id_documento: int = Path(ge=1),
+    estudiante: Estudiante = Depends(estudiante_actual),   # requiere sesión, como el resto del listado
+    db: Session = Depends(get_db),
+):
+    obtener_documento_o_404(db, id_documento)   # 404 si el documento no existe
+
+    filas = db.execute(
+        select(Accion, Estudiante.nombre)
+        .join(Estudiante, Estudiante.id == Accion.id_estudiante)
+        .where(Accion.id_documento == id_documento, Accion.comentario.is_not(None))
+        .order_by(Accion.fecha_calificacion.desc(), Accion.id.desc())
+    ).all()
+
+    return [
+        {
+            "id": accion.id,
+            "autor": nombre_autor,
+            "valor": float(accion.valor) if accion.valor is not None else None,
+            "comentario": accion.comentario,
+            "fecha": accion.fecha_calificacion,
+        }
+        for accion, nombre_autor in filas
+    ]

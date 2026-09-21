@@ -74,6 +74,27 @@
             <a href="documents.html" class="doc-detalle__volver"><i class="bi bi-arrow-left"></i> Volver al listado</a>
             <article class="doc-detalle" id="docDetalle"></article>
             <span class="form-error" id="errorGeneral"></span>
+
+            <!-- ==================== CALIFICAR / COMENTAR ==================== -->
+            <section class="doc-calificar" id="seccionCalificar" style="display:none;">
+              <h2>Tu calificación</h2>
+              <div class="doc-calificar__estrellas" id="estrellas" role="radiogroup" aria-label="Calificación de 1 a 5">
+              </div>
+              <form id="formCalificar">
+                <div class="form-group">
+                  <label for="comentario">Comentario (opcional)</label>
+                  <textarea id="comentario" name="comentario" rows="3" maxlength="1000" placeholder="¿Qué te pareció este documento?"></textarea>
+                </div>
+                <span class="form-error" id="errorCalificar"></span>
+                <button type="submit" class="btn btn-primary">Guardar</button>
+              </form>
+            </section>
+
+            <!-- ==================== COMENTARIOS ==================== -->
+            <section class="doc-comentarios">
+              <h2>Comentarios</h2>
+              <div id="listaComentarios"></div>
+            </section>
             <p class="docs-vacio" id="detalleMensaje"></p>
           </div>
         </section>

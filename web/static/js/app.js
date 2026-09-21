@@ -461,6 +461,112 @@ async function initDocumentoDetalle() {
     crearElemento('p', 'doc-detalle__descripcion', doc.descripcion || 'Este documento no tiene descripción.'),
     acciones
   );
+
+  initCalificar(doc.id, esAutor);
+  cargarComentarios(doc.id);
+}
+
+/**
+ * Bloque "Tu calificación": 5 estrellas + comentario opcional.
+ * Solo se muestra si NO eres el autor (RN-04: no puedes calificar tu propio documento).
+ * El estudiante y el documento nunca viajan en el cuerpo: el documento va en la URL
+ * y el estudiante lo determina el servidor a partir del token.
+ */
+async function initCalificar(idDocumento, esAutor) {
+  const seccion = document.getElementById('seccionCalificar');
+  if (!seccion || esAutor) return;   // el autor no puede calificar su propio documento
+
+  seccion.style.display = 'block';
+  const contenedorEstrellas = document.getElementById('estrellas');
+  const form = document.getElementById('formCalificar');
+  const botones = [];
+  let valorSeleccionado = null;
+
+  function pintarEstrellas(hasta) {
+    botones.forEach((boton, i) => boton.classList.toggle('seleccionada', i < hasta));
+  }
+
+  for (let i = 1; i <= 5; i++) {
+    const boton = crearElemento('button', '', '★', { type: 'button', 'aria-label': `${i} estrella${i > 1 ? 's' : ''}` });
+    boton.addEventListener('click', () => { valorSeleccionado = i; pintarEstrellas(i); });
+    contenedorEstrellas.appendChild(boton);
+    botones.push(boton);
+  }
+
+  // Si el estudiante ya había calificado o comentado, se precarga (es una edición, no una calificación nueva)
+  const propia = await llamarApi(`/api/documentos/${idDocumento}/mi-calificacion`);
+  if (propia.ok && propia.datos) {
+    if (propia.datos.valor) { valorSeleccionado = propia.datos.valor; pintarEstrellas(propia.datos.valor); }
+    if (propia.datos.comentario) form.comentario.value = propia.datos.comentario;
+  }
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    mostrarError('errorCalificar', '');
+
+    const comentario = form.comentario.value.trim();
+    if (valorSeleccionado === null && !comentario) {
+      mostrarError('errorCalificar', 'Elige una calificación, escribe un comentario, o ambos.');
+      return;
+    }
+
+    const boton = form.querySelector('button[type="submit"]');
+    boton.disabled = true;
+
+    const resp = await llamarApi(`/api/documentos/${idDocumento}/calificar`, {
+      metodo: 'POST',
+      cuerpo: { valor: valorSeleccionado, comentario },
+    });
+
+    boton.disabled = false;
+
+    if (resp.ok) {
+      cargarComentarios(idDocumento);   // refresca la lista con el comentario recién guardado
+      return;
+    }
+    if (resp.estado === 401) {
+      terminarSesion('login.html');
+      return;
+    }
+    // Error específico de este formulario (403 si el servidor detecta que sí
+    // eres el autor, o el mensaje de "elige algo" que también valida el
+    // servidor): se muestra junto al botón, no en errorGeneral (que queda
+    // arriba del todo, lejos de este formulario).
+    const detalle = resp.datos && typeof resp.datos.detail === 'string' ? resp.datos.detail
+      : (resp.datos && Array.isArray(resp.datos.detail) && resp.datos.detail[0] && resp.datos.detail[0].msg) || null;
+    mostrarError('errorCalificar', (detalle || 'Ocurrió un error inesperado.').replace('Value error, ', ''));
+  });
+}
+
+/** Lista pública de comentarios de un documento (los que sí escribieron algo). */
+async function cargarComentarios(idDocumento) {
+  const lista = document.getElementById('listaComentarios');
+  if (!lista) return;
+
+  const resp = await llamarApi(`/api/documentos/${idDocumento}/comentarios`);
+  if (resp.estado === 401) {
+    terminarSesion('login.html');
+    return;
+  }
+  if (!resp.ok) {
+    lista.replaceChildren(crearElemento('p', 'docs-vacio', 'No se pudieron cargar los comentarios.'));
+    return;
+  }
+  if (resp.datos.length === 0) {
+    lista.replaceChildren(crearElemento('p', 'docs-vacio', 'Todavía no hay comentarios.'));
+    return;
+  }
+
+  lista.replaceChildren(...resp.datos.map((c) => {
+    const item = crearElemento('article', 'doc-comentario');
+    const cabeza = crearElemento('div', 'doc-comentario__cabeza');
+    cabeza.appendChild(crearElemento('span', 'doc-comentario__autor', c.autor));
+    cabeza.appendChild(document.createTextNode(`· ${formatearFecha(c.fecha)}`));
+    if (c.valor) cabeza.appendChild(crearRating(c.valor));
+    item.appendChild(cabeza);
+    item.appendChild(crearElemento('p', 'doc-comentario__texto', c.comentario));
+    return item;
+  }));
 }
 
 /* --------------------------------------------------------------------------
@@ -522,10 +628,11 @@ async function initSesion() {
    -------------------------------------------------------------------------- */
 
 /** Crea un elemento con clase y texto. El texto va con textContent: nunca se interpreta como HTML. */
-function crearElemento(etiqueta, clase, texto) {
+function crearElemento(etiqueta, clase, texto, atributos) {
   const elemento = document.createElement(etiqueta);
   if (clase) elemento.className = clase;
   if (texto !== undefined) elemento.textContent = texto;
+  if (atributos) Object.entries(atributos).forEach(([nombre, valor]) => elemento.setAttribute(nombre, valor));
   return elemento;
 }
 
