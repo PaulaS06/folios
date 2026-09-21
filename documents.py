@@ -119,6 +119,7 @@ def listar_documentos(
     q: str | None = Query(default=None, max_length=100),
     materia: int | None = Query(default=None, ge=1),
     categoria: int | None = Query(default=None, ge=1),
+    mios: bool = Query(default=False),                     # solo los documentos del estudiante con sesión
     estudiante: Estudiante = Depends(estudiante_actual),   # solo estudiantes con sesión
     db: Session = Depends(get_db),
 ):
@@ -129,6 +130,10 @@ def listar_documentos(
         consulta = consulta.where(Documento.id_materia == materia)
     if categoria is not None:
         consulta = consulta.where(Documento.id_categoria == categoria)
+
+    if mios:
+        # "Mis documentos": el autor sale del token, no de un parámetro que pueda inventar el cliente
+        consulta = consulta.where(Documento.id_estudiante == estudiante.id)
 
     texto = (q or "").strip()
     if texto:

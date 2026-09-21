@@ -586,29 +586,35 @@ async function initDocumentos() {
   const grid = document.getElementById('docsGrid');
   if (!grid) return;
 
+  // Buscador y filtros son opcionales: la página "Mis documentos" no los tiene
   const buscador = document.getElementById('buscador');
   const filtroMateria = document.getElementById('filtroMateria');
   const filtroCategoria = document.getElementById('filtroCategoria');
   const vacio = document.getElementById('docsVacio');
+  // La página "Mis documentos" usa este mismo listado, marcado con data-solo-mios="true"
+  const soloMios = grid.dataset.soloMios === 'true';
 
-  // Los filtros se llenan desde la API (todas las materias, agrupadas por programa)
-  const [materias, categorias] = await Promise.all([
-    llamarApi('/api/materias'),
-    llamarApi('/api/categorias'),
-  ]);
-  if (materias.ok) {
-    llenarSelectAgrupado(
-      filtroMateria,
-      materias.datos,
-      (materia) => materia.programa,
-      (materia) => materia.codigo,
-      (materia) => materia.nombre
-    );
-  }
-  if (categorias.ok) {
-    categorias.datos.forEach((categoria) => {
-      filtroCategoria.appendChild(crearOpcion(categoria.id, categoria.nombre));
-    });
+  // Los filtros se llenan desde la API (todas las materias, agrupadas por programa).
+  // Si la página no los tiene, ni siquiera se piden los catálogos.
+  if (filtroMateria && filtroCategoria) {
+    const [materias, categorias] = await Promise.all([
+      llamarApi('/api/materias'),
+      llamarApi('/api/categorias'),
+    ]);
+    if (materias.ok) {
+      llenarSelectAgrupado(
+        filtroMateria,
+        materias.datos,
+        (materia) => materia.programa,
+        (materia) => materia.codigo,
+        (materia) => materia.nombre
+      );
+    }
+    if (categorias.ok) {
+      categorias.datos.forEach((categoria) => {
+        filtroCategoria.appendChild(crearOpcion(categoria.id, categoria.nombre));
+      });
+    }
   }
 
   function mostrarMensaje(texto) {
@@ -623,13 +629,15 @@ async function initDocumentos() {
     const numero = ++ultimaSolicitud;
 
     const parametros = new URLSearchParams();
-    const texto = buscador.value.trim();
+    const texto = buscador ? buscador.value.trim() : '';
     if (texto) parametros.set('q', texto);
-    if (filtroMateria.value) parametros.set('materia', filtroMateria.value);
-    if (filtroCategoria.value) parametros.set('categoria', filtroCategoria.value);
-    const hayFiltros = parametros.toString() !== '';
+    if (filtroMateria && filtroMateria.value) parametros.set('materia', filtroMateria.value);
+    if (filtroCategoria && filtroCategoria.value) parametros.set('categoria', filtroCategoria.value);
+    const hayFiltros = parametros.toString() !== '';   // solo cuenta lo que eligió el usuario
+    if (soloMios) parametros.set('mios', 'true');
+    const consulta = parametros.toString();
 
-    const resp = await llamarApi(`/api/documentos${hayFiltros ? '?' + parametros.toString() : ''}`);
+    const resp = await llamarApi(`/api/documentos${consulta ? '?' + consulta : ''}`);
 
     // Si mientras esperábamos se hizo otra búsqueda, esta respuesta ya es vieja:
     // se descarta para que no pise el resultado más reciente.
@@ -646,7 +654,9 @@ async function initDocumentos() {
     if (resp.datos.length === 0) {
       mostrarMensaje(hayFiltros
         ? 'No se encontraron documentos con esos filtros.'
-        : 'Aún no hay documentos publicados. ¡Sé el primero en subir uno!');
+        : soloMios
+          ? 'Aún no has publicado documentos. Usa «Subir documento» para compartir el primero.'
+          : 'Aún no hay documentos publicados. ¡Sé el primero en subir uno!');
       return;
     }
 
@@ -657,12 +667,14 @@ async function initDocumentos() {
   // Buscador: espera 300 ms sin teclear antes de preguntarle al servidor,
   // para no hacer una petición por cada letra.
   let temporizador;
-  buscador.addEventListener('input', () => {
-    clearTimeout(temporizador);
-    temporizador = setTimeout(cargarDocumentos, 300);
-  });
-  filtroMateria.addEventListener('change', cargarDocumentos);
-  filtroCategoria.addEventListener('change', cargarDocumentos);
+  if (buscador) {
+    buscador.addEventListener('input', () => {
+      clearTimeout(temporizador);
+      temporizador = setTimeout(cargarDocumentos, 300);
+    });
+  }
+  if (filtroMateria) filtroMateria.addEventListener('change', cargarDocumentos);
+  if (filtroCategoria) filtroCategoria.addEventListener('change', cargarDocumentos);
 
   cargarDocumentos();
 }

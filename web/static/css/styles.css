@@ -508,7 +508,8 @@ p {
 .doc-card__acciones {
   display: flex;
   gap: 0.6rem;
-  margin-top: 0.75rem;
+  margin-top: auto;      /* empuja los botones al fondo de la tarjeta */
+  padding-top: 0.75rem;  /* espacio mínimo entre el contenido y los botones */
 }
 
 .doc-card__acciones .btn {
