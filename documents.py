@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from data.database import get_db
@@ -71,3 +72,55 @@ def publicar_documento(
     db.refresh(documento)
 
     return armar_respuesta(documento, materia.nombre, categoria.nombre, estudiante.nombre)
+
+
+def escapar_like(texto: str) -> str:
+    """% y _ son comodines de LIKE: si el usuario busca "100%" debe buscarse ese
+    texto, no "100 seguido de cualquier cosa". Se marcan con ! como escape."""
+    return texto.replace("!", "!!").replace("%", "!%").replace("_", "!_")
+
+
+def sin_tildes(valor):
+    """unaccent (extensión de PostgreSQL): 'Cálculo' -> 'Calculo', para que
+    buscar 'calculo' encuentre 'Cálculo'."""
+    return func.unaccent(valor)
+
+
+@router.get("", response_model=list[DocumentoRespuesta])
+def listar_documentos(
+    q: str | None = Query(default=None, max_length=100),
+    materia: int | None = Query(default=None, ge=1),
+    categoria: int | None = Query(default=None, ge=1),
+    estudiante: Estudiante = Depends(estudiante_actual),   # solo estudiantes con sesión
+    db: Session = Depends(get_db),
+):
+    consulta = (
+        select(Documento, Materia.nombre, Categoria.nombre, Estudiante.nombre)
+        .join(Materia, Materia.codigo == Documento.id_materia)
+        .join(Categoria, Categoria.id == Documento.id_categoria)
+        .join(Estudiante, Estudiante.id == Documento.id_estudiante)
+        .order_by(Documento.fecha_subida.desc(), Documento.id.desc())   # más recientes primero
+    )
+
+    # Cada filtro es opcional y se combinan con AND (RF-05, CA_03)
+    if materia is not None:
+        consulta = consulta.where(Documento.id_materia == materia)
+    if categoria is not None:
+        consulta = consulta.where(Documento.id_categoria == categoria)
+
+    texto = (q or "").strip()
+    if texto:
+        # Texto libre sobre nombre del documento, materia o autor.
+        # Los valores viajan como parámetros: lo que escriba el usuario no puede inyectar SQL.
+        patron = sin_tildes(f"%{escapar_like(texto)}%")
+        consulta = consulta.where(or_(
+            sin_tildes(Documento.nombre).ilike(patron, escape="!"),
+            sin_tildes(Materia.nombre).ilike(patron, escape="!"),
+            sin_tildes(Estudiante.nombre).ilike(patron, escape="!"),
+        ))
+
+    filas = db.execute(consulta).all()
+    return [
+        armar_respuesta(documento, nombre_materia, nombre_categoria, nombre_autor)
+        for documento, nombre_materia, nombre_categoria, nombre_autor in filas
+    ]

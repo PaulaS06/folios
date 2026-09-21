@@ -373,17 +373,68 @@ async function initSesion() {
 }
 
 /* --------------------------------------------------------------------------
-   Documentos
-   Lista vacía por ahora: se llenará con los datos que devuelva la API.
+   Documentos (listado, búsqueda y filtros)
+   El servidor es quien busca y filtra; el navegador solo pide y pinta.
    -------------------------------------------------------------------------- */
-const DOCUMENTOS = [];
+
+/** Crea un elemento con clase y texto. El texto va con textContent: nunca se interpreta como HTML. */
+function crearElemento(etiqueta, clase, texto) {
+  const elemento = document.createElement(etiqueta);
+  if (clase) elemento.className = clase;
+  if (texto !== undefined) elemento.textContent = texto;
+  return elemento;
+}
+
+/** Solo se enlaza a http(s): así un "javascript:..." nunca se vuelve clicable. */
+function esEnlaceSeguro(url) {
+  try {
+    const protocolo = new URL(url).protocol;
+    return protocolo === 'http:' || protocolo === 'https:';
+  } catch (error) {
+    return false;
+  }
+}
 
 /**
- * Inicializa la página de documentos: llena los filtros con las materias y
- * categorías presentes en DOCUMENTOS, dibuja las tarjetas y conecta
- * el buscador + los selects para filtrar en el navegador (sin backend aún).
+ * "2026-09-19" -> fecha local legible.
+ * OJO: new Date("2026-09-19") la interpreta como medianoche UTC, que en Colombia
+ * (UTC-5) es el día anterior. Por eso se arma con año, mes y día por separado.
  */
-function initDocumentos() {
+function formatearFecha(texto) {
+  const [anio, mes, dia] = texto.split('-').map(Number);
+  return new Date(anio, mes - 1, dia).toLocaleDateString('es-CO', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+function crearTarjetaDocumento(doc) {
+  const tarjeta = crearElemento('article', 'doc-card');
+  tarjeta.appendChild(crearElemento('span', 'doc-card__categoria', doc.categoria));
+  tarjeta.appendChild(crearElemento('h3', 'doc-card__nombre', doc.nombre));
+  tarjeta.appendChild(crearElemento('span', 'doc-card__meta', doc.materia));
+  tarjeta.appendChild(crearElemento('span', 'doc-card__meta', `${doc.autor} · ${formatearFecha(doc.fecha)}`));
+
+  const rating = crearElemento('span', 'doc-card__rating');
+  rating.appendChild(crearElemento('i', 'bi bi-star-fill'));
+  // Promedio 0 = todavía nadie lo ha calificado
+  rating.appendChild(document.createTextNode(doc.calificacion > 0 ? ` ${doc.calificacion.toFixed(1)}` : ' Sin calificar'));
+  tarjeta.appendChild(rating);
+
+  const acciones = crearElemento('div', 'doc-card__acciones');
+  const ver = crearElemento('a', 'btn btn-outline', 'Ver');
+  ver.href = `documento.html?id=${encodeURIComponent(doc.id)}`;
+  acciones.appendChild(ver);
+
+  if (esEnlaceSeguro(doc.enlace)) {
+    const abrir = crearElemento('a', 'btn btn-primary', 'Abrir');
+    abrir.href = doc.enlace;
+    abrir.target = '_blank';
+    abrir.rel = 'noopener noreferrer';   // la página abierta no puede manipular esta pestaña
+    acciones.appendChild(abrir);
+  }
+  tarjeta.appendChild(acciones);
+  return tarjeta;
+}
+
+async function initDocumentos() {
   const grid = document.getElementById('docsGrid');
   if (!grid) return;
 
@@ -392,58 +443,78 @@ function initDocumentos() {
   const filtroCategoria = document.getElementById('filtroCategoria');
   const vacio = document.getElementById('docsVacio');
 
-  llenarSelect(filtroMateria, DOCUMENTOS.map((d) => d.materia));
-  llenarSelect(filtroCategoria, DOCUMENTOS.map((d) => d.categoria));
-
-  function renderizar() {
-    const texto = buscador.value.trim().toLowerCase();
-    const materia = filtroMateria.value;
-    const categoria = filtroCategoria.value;
-
-    const filtrados = DOCUMENTOS.filter((doc) => {
-      const coincideTexto =
-        doc.nombre.toLowerCase().includes(texto) ||
-        doc.materia.toLowerCase().includes(texto) ||
-        doc.autor.toLowerCase().includes(texto);
-      const coincideMateria = !materia || doc.materia === materia;
-      const coincideCategoria = !categoria || doc.categoria === categoria;
-      return coincideTexto && coincideMateria && coincideCategoria;
+  // Los filtros se llenan desde la API (todas las materias, agrupadas por programa)
+  const [materias, categorias] = await Promise.all([
+    llamarApi('/api/materias'),
+    llamarApi('/api/categorias'),
+  ]);
+  if (materias.ok) {
+    llenarSelectAgrupado(
+      filtroMateria,
+      materias.datos,
+      (materia) => materia.programa,
+      (materia) => materia.codigo,
+      (materia) => materia.nombre
+    );
+  }
+  if (categorias.ok) {
+    categorias.datos.forEach((categoria) => {
+      filtroCategoria.appendChild(crearOpcion(categoria.id, categoria.nombre));
     });
-
-    grid.innerHTML = filtrados.map(crearTarjetaDocumento).join('');
-    vacio.style.display = filtrados.length === 0 ? 'block' : 'none';
   }
 
-  buscador.addEventListener('input', renderizar);
-  filtroMateria.addEventListener('change', renderizar);
-  filtroCategoria.addEventListener('change', renderizar);
+  function mostrarMensaje(texto) {
+    grid.replaceChildren();
+    vacio.textContent = texto;
+    vacio.style.display = 'block';
+  }
 
-  renderizar();
-}
+  let ultimaSolicitud = 0;
 
-function llenarSelect(select, valores) {
-  const unicos = [...new Set(valores)].sort();
-  unicos.forEach((valor) => {
-    const option = document.createElement('option');
-    option.value = valor;
-    option.textContent = valor;
-    select.appendChild(option);
+  async function cargarDocumentos() {
+    const numero = ++ultimaSolicitud;
+
+    const parametros = new URLSearchParams();
+    const texto = buscador.value.trim();
+    if (texto) parametros.set('q', texto);
+    if (filtroMateria.value) parametros.set('materia', filtroMateria.value);
+    if (filtroCategoria.value) parametros.set('categoria', filtroCategoria.value);
+    const hayFiltros = parametros.toString() !== '';
+
+    const resp = await llamarApi(`/api/documentos${hayFiltros ? '?' + parametros.toString() : ''}`);
+
+    // Si mientras esperábamos se hizo otra búsqueda, esta respuesta ya es vieja:
+    // se descarta para que no pise el resultado más reciente.
+    if (numero !== ultimaSolicitud) return;
+
+    if (resp.estado === 401) {
+      terminarSesion('login.html');
+      return;
+    }
+    if (!resp.ok) {
+      mostrarMensaje('No se pudieron cargar los documentos. Intenta de nuevo en un momento.');
+      return;
+    }
+    if (resp.datos.length === 0) {
+      mostrarMensaje(hayFiltros
+        ? 'No se encontraron documentos con esos filtros.'
+        : 'Aún no hay documentos publicados. ¡Sé el primero en subir uno!');
+      return;
+    }
+
+    vacio.style.display = 'none';
+    grid.replaceChildren(...resp.datos.map(crearTarjetaDocumento));
+  }
+
+  // Buscador: espera 300 ms sin teclear antes de preguntarle al servidor,
+  // para no hacer una petición por cada letra.
+  let temporizador;
+  buscador.addEventListener('input', () => {
+    clearTimeout(temporizador);
+    temporizador = setTimeout(cargarDocumentos, 300);
   });
-}
+  filtroMateria.addEventListener('change', cargarDocumentos);
+  filtroCategoria.addEventListener('change', cargarDocumentos);
 
-function crearTarjetaDocumento(doc) {
-  const fecha = new Date(doc.fecha).toLocaleDateString('es-CO', { year: 'numeric', month: 'short', day: 'numeric' });
-  return `
-    <article class="doc-card">
-      <span class="doc-card__categoria">${doc.categoria}</span>
-      <h3 class="doc-card__nombre">${doc.nombre}</h3>
-      <span class="doc-card__meta">${doc.materia}</span>
-      <span class="doc-card__meta">${doc.autor} · ${fecha}</span>
-      <span class="doc-card__rating"><i class="bi bi-star-fill"></i> ${doc.calificacion.toFixed(1)}</span>
-      <div class="doc-card__acciones">
-        <a href="documento.html?id=${doc.id}" class="btn btn-outline">Ver</a>
-        <button type="button" class="btn btn-primary" onclick="alert('Descarga simulada: ${doc.nombre}')">Descargar</button>
-      </div>
-    </article>
-  `;
+  cargarDocumentos();
 }
