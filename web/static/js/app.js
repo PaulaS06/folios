@@ -18,9 +18,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   initRegistroForm();
   initLoginForm();
-  initSubirDocumento();
+  initFormularioDocumento();
   initSesion();
   initDocumentos();
+  initDocumentoDetalle();
 });
 
 /* --------------------------------------------------------------------------
@@ -236,7 +237,7 @@ function initLoginForm() {
 
     if (resp.ok) {
       localStorage.setItem(TOKEN_KEY, resp.datos.access_token);
-      window.location.href = 'documentos.html';
+      window.location.href = 'documents.html';
       return;
     }
     if (resp.estado === 401) {
@@ -278,11 +279,61 @@ async function cargarCatalogosDocumento(form) {
   }
 }
 
-function initSubirDocumento() {
+/** Lee ?id=... de la URL. Devuelve un entero >= 1, o null si no es válido. */
+function leerIdDeLaUrl() {
+  const id = Number(new URLSearchParams(window.location.search).get('id'));
+  return Number.isInteger(id) && id >= 1 ? id : null;
+}
+
+/**
+ * Formulario de documentos. Lo usan dos páginas distintas:
+ *  - upload_document.html   (data-modo ausente o "crear")  -> POST
+ *  - edit_document.html  (data-modo="editar")           -> PUT, con los campos prellenados
+ * Son páginas separadas, pero la validación y el envío viven en un solo lugar.
+ */
+async function initFormularioDocumento() {
   const form = document.getElementById('formDocumento');
   if (!form) return;
 
-  cargarCatalogosDocumento(form);
+  const editando = form.dataset.modo === 'editar';
+  const boton = form.querySelector('button[type="submit"]');
+  let idDocumento = null;
+
+  await cargarCatalogosDocumento(form);
+
+  if (editando) {
+    idDocumento = leerIdDeLaUrl();
+    if (idDocumento === null) {
+      mostrarError('errorGeneral', 'Documento no encontrado.');
+      boton.disabled = true;
+      return;
+    }
+    document.getElementById('enlaceCancelar').href = `document.html?id=${idDocumento}`;
+
+    const [perfil, resp] = await Promise.all([obtenerPerfil(), llamarApi(`/api/documentos/${idDocumento}`)]);
+    if (resp.estado === 401) {
+      terminarSesion('login.html');
+      return;
+    }
+    if (!resp.ok) {
+      mostrarError('errorGeneral', resp.estado === 404 ? 'Documento no encontrado.' : 'No se pudo cargar el documento.');
+      boton.disabled = true;
+      return;
+    }
+    // Comodidad para el usuario; quien de verdad impide editar es el servidor (403).
+    if (perfil.ok && perfil.datos.id !== resp.datos.id_autor) {
+      mostrarError('errorGeneral', 'Solo el autor puede editar este documento.');
+      boton.disabled = true;
+      return;
+    }
+
+    const doc = resp.datos;
+    form.nombre.value = doc.nombre;
+    form.descripcion.value = doc.descripcion || '';
+    form.materia.value = String(doc.id_materia);
+    form.categoria.value = String(doc.id_categoria);
+    form.enlace.value = doc.enlace;
+  }
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -297,11 +348,10 @@ function initSubirDocumento() {
     mostrarError('errorDescripcion', '');
     if (!esValido) return;
 
-    const boton = form.querySelector('button[type="submit"]');
     boton.disabled = true;
 
-    const resp = await llamarApi('/api/documentos', {
-      metodo: 'POST',
+    const resp = await llamarApi(editando ? `/api/documentos/${idDocumento}` : '/api/documentos', {
+      metodo: editando ? 'PUT' : 'POST',
       cuerpo: {
         nombre: form.nombre.value.trim(),
         descripcion: form.descripcion.value,          // vacío = sin descripción (el backend lo normaliza)
@@ -314,21 +364,115 @@ function initSubirDocumento() {
     boton.disabled = false;
 
     if (resp.ok) {
-      alert('Documento publicado correctamente.');
-      form.reset();
+      window.location.href = editando ? `document.html?id=${idDocumento}` : 'documents.html';
       return;
     }
     if (resp.estado === 401) {          // la sesión venció mientras llenabas el formulario
       terminarSesion('login.html');
       return;
     }
-    mostrarErrorServidor(resp);         // 400 (materia/categoría inexistente), 422, sin conexión...
+    mostrarErrorServidor(resp);         // 400, 403, 404, 422, sin conexión...
   });
+}
+
+/* --------------------------------------------------------------------------
+   Detalle de un documento
+   -------------------------------------------------------------------------- */
+async function initDocumentoDetalle() {
+  const contenedor = document.getElementById('docDetalle');
+  if (!contenedor) return;
+
+  const mensaje = document.getElementById('detalleMensaje');
+  function mostrarMensajeDetalle(texto) {
+    contenedor.style.display = 'none';
+    mensaje.textContent = texto;
+    mensaje.style.display = 'block';
+  }
+
+  const id = leerIdDeLaUrl();
+  if (id === null) {
+    mostrarMensajeDetalle('Documento no encontrado.');
+    return;
+  }
+
+  const [perfil, resp] = await Promise.all([obtenerPerfil(), llamarApi(`/api/documentos/${id}`)]);
+  if (resp.estado === 401) {
+    terminarSesion('login.html');
+    return;
+  }
+  if (resp.estado === 404) {
+    mostrarMensajeDetalle('Documento no encontrado. Puede que su autor lo haya eliminado.');
+    return;
+  }
+  if (!resp.ok) {
+    mostrarMensajeDetalle('No se pudo cargar el documento. Intenta de nuevo en un momento.');
+    return;
+  }
+
+  const doc = resp.datos;
+  const esAutor = perfil.ok && perfil.datos.id === doc.id_autor;
+  document.title = `${doc.nombre} — Folios`;
+
+  const acciones = crearElemento('div', 'doc-detalle__acciones');
+  if (esEnlaceSeguro(doc.enlace)) {
+    const abrir = crearElemento('a', 'btn btn-primary', 'Abrir documento');
+    abrir.href = doc.enlace;
+    abrir.target = '_blank';
+    abrir.rel = 'noopener noreferrer';
+    acciones.appendChild(abrir);
+  }
+
+  // Mostrar u ocultar estos botones es comodidad: el servidor vuelve a comprobar
+  // que quien edita o elimina sea el autor (RN-05).
+  if (esAutor) {
+    const editar = crearElemento('a', 'btn btn-outline', 'Editar');
+    editar.href = `edit_document.html?id=${encodeURIComponent(doc.id)}`;
+    acciones.appendChild(editar);
+
+    const eliminar = crearElemento('button', 'btn btn-danger', 'Eliminar');
+    eliminar.type = 'button';
+    eliminar.addEventListener('click', async () => {
+      mostrarError('errorGeneral', '');
+      const seguro = confirm(`¿Eliminar "${doc.nombre}"?\n\nTambién se borrarán sus calificaciones y comentarios. Esta acción no se puede deshacer.`);
+      if (!seguro) return;
+
+      eliminar.disabled = true;
+      const respuesta = await llamarApi(`/api/documentos/${doc.id}`, { metodo: 'DELETE' });
+      if (respuesta.ok) {
+        window.location.href = 'documents.html';
+        return;
+      }
+      eliminar.disabled = false;
+      if (respuesta.estado === 401) {
+        terminarSesion('login.html');
+        return;
+      }
+      mostrarErrorServidor(respuesta);
+    });
+    acciones.appendChild(eliminar);
+  }
+
+  contenedor.replaceChildren(
+    crearElemento('span', 'doc-card__categoria', doc.categoria),
+    crearElemento('h1', '', doc.nombre),
+    crearElemento('span', 'doc-card__meta', doc.materia),
+    crearElemento('span', 'doc-card__meta', `${doc.autor} · ${formatearFecha(doc.fecha)}`),
+    crearRating(doc.calificacion),
+    crearElemento('p', 'doc-detalle__descripcion', doc.descripcion || 'Este documento no tiene descripción.'),
+    acciones
+  );
 }
 
 /* --------------------------------------------------------------------------
    Sesión
    -------------------------------------------------------------------------- */
+// El perfil se pide una sola vez por página y lo comparten quienes lo necesiten
+let perfilPendiente = null;
+function obtenerPerfil() {
+  if (!perfilPendiente) perfilPendiente = llamarApi('/api/perfil');
+  return perfilPendiente;
+}
+
 function terminarSesion(destino) {
   localStorage.removeItem(TOKEN_KEY);
   window.location.href = destino;
@@ -360,7 +504,7 @@ async function initSesion() {
     return;
   }
 
-  const resp = await llamarApi('/api/perfil');
+  const resp = await obtenerPerfil();
   if (resp.estado === 401) {          // token vencido o alterado
     terminarSesion('login.html');
     return;
@@ -405,6 +549,14 @@ function formatearFecha(texto) {
   return new Date(anio, mes - 1, dia).toLocaleDateString('es-CO', { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
+function crearRating(calificacion) {
+  const rating = crearElemento('span', 'doc-card__rating');
+  rating.appendChild(crearElemento('i', 'bi bi-star-fill'));
+  // Promedio 0 = todavía nadie lo ha calificado
+  rating.appendChild(document.createTextNode(calificacion > 0 ? ` ${calificacion.toFixed(1)}` : ' Sin calificar'));
+  return rating;
+}
+
 function crearTarjetaDocumento(doc) {
   const tarjeta = crearElemento('article', 'doc-card');
   tarjeta.appendChild(crearElemento('span', 'doc-card__categoria', doc.categoria));
@@ -412,15 +564,11 @@ function crearTarjetaDocumento(doc) {
   tarjeta.appendChild(crearElemento('span', 'doc-card__meta', doc.materia));
   tarjeta.appendChild(crearElemento('span', 'doc-card__meta', `${doc.autor} · ${formatearFecha(doc.fecha)}`));
 
-  const rating = crearElemento('span', 'doc-card__rating');
-  rating.appendChild(crearElemento('i', 'bi bi-star-fill'));
-  // Promedio 0 = todavía nadie lo ha calificado
-  rating.appendChild(document.createTextNode(doc.calificacion > 0 ? ` ${doc.calificacion.toFixed(1)}` : ' Sin calificar'));
-  tarjeta.appendChild(rating);
+  tarjeta.appendChild(crearRating(doc.calificacion));
 
   const acciones = crearElemento('div', 'doc-card__acciones');
   const ver = crearElemento('a', 'btn btn-outline', 'Ver');
-  ver.href = `documento.html?id=${encodeURIComponent(doc.id)}`;
+  ver.href = `document.html?id=${encodeURIComponent(doc.id)}`;
   acciones.appendChild(ver);
 
   if (esEnlaceSeguro(doc.enlace)) {

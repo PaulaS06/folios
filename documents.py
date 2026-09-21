@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, Response, status
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
@@ -23,7 +23,7 @@ def hoy_colombia():
 
 def armar_respuesta(documento, materia, categoria, autor):
     """Convierte un documento (más los nombres de su materia, categoría y autor)
-    en lo que devuelve la API. Se reutilizará en el listado y en el detalle."""
+    en lo que devuelve la API."""
     return {
         "id": documento.id,
         "nombre": documento.nombre,
@@ -38,6 +38,34 @@ def armar_respuesta(documento, materia, categoria, autor):
         "fecha": documento.fecha_subida,
         "calificacion": float(documento.promedio_calificacion or 0),
     }
+
+
+def consulta_base():
+    """Documento + nombre de su materia, categoría y autor. La comparten el
+    listado y el detalle, para que ambos devuelvan exactamente lo mismo."""
+    return (
+        select(Documento, Materia.nombre, Categoria.nombre, Estudiante.nombre)
+        .join(Materia, Materia.codigo == Documento.id_materia)
+        .join(Categoria, Categoria.id == Documento.id_categoria)
+        .join(Estudiante, Estudiante.id == Documento.id_estudiante)
+    )
+
+
+def obtener_documento_o_404(db: Session, id_documento: int) -> Documento:
+    documento = db.get(Documento, id_documento)
+    if documento is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="El documento no existe.")
+    return documento
+
+
+def exigir_autor(documento: Documento, estudiante: Estudiante, accion: str) -> None:
+    """RN-05: solo el autor puede editar o eliminar su documento.
+    Se compara con el estudiante del TOKEN, nunca con algo que envíe el cliente."""
+    if documento.id_estudiante != estudiante.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Solo el autor puede {accion} este documento.",
+        )
 
 
 @router.post("", response_model=DocumentoRespuesta, status_code=status.HTTP_201_CREATED)
@@ -94,13 +122,7 @@ def listar_documentos(
     estudiante: Estudiante = Depends(estudiante_actual),   # solo estudiantes con sesión
     db: Session = Depends(get_db),
 ):
-    consulta = (
-        select(Documento, Materia.nombre, Categoria.nombre, Estudiante.nombre)
-        .join(Materia, Materia.codigo == Documento.id_materia)
-        .join(Categoria, Categoria.id == Documento.id_categoria)
-        .join(Estudiante, Estudiante.id == Documento.id_estudiante)
-        .order_by(Documento.fecha_subida.desc(), Documento.id.desc())   # más recientes primero
-    )
+    consulta = consulta_base().order_by(Documento.fecha_subida.desc(), Documento.id.desc())
 
     # Cada filtro es opcional y se combinan con AND (RF-05, CA_03)
     if materia is not None:
@@ -124,3 +146,62 @@ def listar_documentos(
         armar_respuesta(documento, nombre_materia, nombre_categoria, nombre_autor)
         for documento, nombre_materia, nombre_categoria, nombre_autor in filas
     ]
+
+
+@router.get("/{id_documento}", response_model=DocumentoRespuesta)
+def ver_documento(
+    id_documento: int = Path(ge=1),
+    estudiante: Estudiante = Depends(estudiante_actual),
+    db: Session = Depends(get_db),
+):
+    fila = db.execute(consulta_base().where(Documento.id == id_documento)).first()
+    if fila is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="El documento no existe.")
+    documento, nombre_materia, nombre_categoria, nombre_autor = fila
+    return armar_respuesta(documento, nombre_materia, nombre_categoria, nombre_autor)
+
+
+@router.put("/{id_documento}", response_model=DocumentoRespuesta)
+def editar_documento(
+    datos: DocumentoCrear,                      # mismos campos y mismas validaciones que al publicar
+    id_documento: int = Path(ge=1),
+    estudiante: Estudiante = Depends(estudiante_actual),
+    db: Session = Depends(get_db),
+):
+    documento = obtener_documento_o_404(db, id_documento)
+    exigir_autor(documento, estudiante, "editar")
+
+    materia = db.get(Materia, datos.id_materia)
+    if materia is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="La materia no existe.")
+    categoria = db.get(Categoria, datos.id_categoria)
+    if categoria is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="La categoría no existe.")
+
+    # Se cambian solo los datos editables. La fecha de publicación, el autor y
+    # el promedio de calificación quedan intactos.
+    documento.nombre = datos.nombre
+    documento.descripcion = datos.descripcion
+    documento.enlace_archivo = datos.enlace
+    documento.id_materia = materia.codigo
+    documento.id_categoria = categoria.id
+    db.commit()
+    db.refresh(documento)
+
+    return armar_respuesta(documento, materia.nombre, categoria.nombre, estudiante.nombre)
+
+
+@router.delete("/{id_documento}", status_code=status.HTTP_204_NO_CONTENT)
+def eliminar_documento(
+    id_documento: int = Path(ge=1),
+    estudiante: Estudiante = Depends(estudiante_actual),
+    db: Session = Depends(get_db),
+):
+    documento = obtener_documento_o_404(db, id_documento)
+    exigir_autor(documento, estudiante, "eliminar")
+
+    # Sus calificaciones y comentarios se borran solos: la tabla accion tiene
+    # ON DELETE CASCADE hacia documento.
+    db.delete(documento)
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
