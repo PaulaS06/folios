@@ -1,0 +1,6 @@
+[submodule "backend"]
+	path = backend
+	url = https://github.com/PaulaS06/folios-backend.git
+[submodule "frontend"]
+	path = frontend
+	url = https://github.com/SimonCorreaB12/folios-frontend.git
