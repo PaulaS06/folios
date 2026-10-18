@@ -50,7 +50,7 @@ folios/
 | Backend | bcrypt (hash de contraseñas) | 5.0.0 |
 | Base de datos | PostgreSQL (imagen `postgres:17`) | 17 |
 | Pruebas backend | pytest | 8.4.2 |
-| Pruebas frontend | Playwright (`@playwright/test`) | 1.x |
+| Pruebas frontend | Playwright (`@playwright/test`) | 1.64.1 |
 | Contenedores | Docker + Docker Compose | Compose v2 |
 
 ## Requisitos
@@ -163,4 +163,4 @@ npm test
 | HU-11 | Como equipo, queremos el frontend en su propio repositorio y contenerizado con Docker (nginx), con su imagen publicada en Docker Hub, para poder desplegarlo en cualquier máquina. | Simón Correa | Done |
 | HU-12 | Como equipo, queremos la base de datos con su esquema definido y un docker-compose que levante frontend, backend y BD con un solo comando. | Paula Meneses | Done |
 | HU-13 | Como equipo, queremos pruebas unitarias del backend para verificar las funcionalidades críticas. | Paula Meneses | Done |
-| HU-14 | Como equipo, queremos pruebas de Playwright del frontend para verificar los flujos críticos desde el navegador. | Simón Correa | En progreso |
+| HU-14 | Como equipo, queremos pruebas de Playwright del frontend para verificar los flujos críticos desde el navegador. | Simón Correa | Done |
