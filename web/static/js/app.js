@@ -624,12 +624,6 @@ async function initSesion() {
 }
 
 /* --------------------------------------------------------------------------
-   Documentos (listado, búsqueda y filtros)
-   El servidor es quien busca y filtra; el navegador solo pide y pinta.
-   -------------------------------------------------------------------------- */
-
-
-/* --------------------------------------------------------------------------
    Perfil (HU-09)
    -------------------------------------------------------------------------- */
 async function initPerfil() {
@@ -653,6 +647,10 @@ async function initPerfil() {
   document.getElementById('perfilPuntaje').textContent = `${datos.puntaje} puntos`;
 }
 
+/* --------------------------------------------------------------------------
+   Documentos (listado, búsqueda y filtros)
+   El servidor es quien busca y filtra; el navegador solo pide y pinta.
+   -------------------------------------------------------------------------- */
 
 /** Crea un elemento con clase y texto. El texto va con textContent: nunca se interpreta como HTML. */
 function crearElemento(etiqueta, clase, texto, atributos) {
