@@ -85,6 +85,10 @@ class EstudianteRespuesta(BaseModel):
     semestre: int
     puntaje: int
 
+class PerfilRespuesta(EstudianteRespuesta):
+    """Lo que ve el estudiante en su perfil (HU-09): sus datos + el nombre de su programa."""
+    programa: str | None = None
+
 
 # ---------- acciones (calificar y/o comentar) ----------
 

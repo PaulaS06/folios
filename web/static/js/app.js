@@ -22,6 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initSesion();
   initDocumentos();
   initDocumentoDetalle();
+  initPerfil();
 });
 
 /* --------------------------------------------------------------------------
@@ -626,6 +627,32 @@ async function initSesion() {
    Documentos (listado, búsqueda y filtros)
    El servidor es quien busca y filtra; el navegador solo pide y pinta.
    -------------------------------------------------------------------------- */
+
+
+/* --------------------------------------------------------------------------
+   Perfil (HU-09)
+   -------------------------------------------------------------------------- */
+async function initPerfil() {
+  const contenedor = document.getElementById('perfilDatos');
+  if (!contenedor) return;   // no estamos en profile.html
+
+  // Reutiliza la misma petición que ya hizo initSesion (obtenerPerfil la guarda)
+  const resp = await obtenerPerfil();
+  if (!resp.ok) {
+    // Si fue 401, initSesion ya está mandando al login; aquí solo se avisa.
+    document.getElementById('perfilNombre').textContent = 'No se pudo cargar tu perfil.';
+    return;
+  }
+
+  const datos = resp.datos;
+  // textContent (no innerHTML): lo que venga de la BD se muestra como texto, nunca como HTML
+  document.getElementById('perfilNombre').textContent = datos.nombre;
+  document.getElementById('perfilCorreo').textContent = datos.correo;
+  document.getElementById('perfilPrograma').textContent = datos.programa ?? 'Sin programa';
+  document.getElementById('perfilSemestre').textContent = datos.semestre;
+  document.getElementById('perfilPuntaje').textContent = `${datos.puntaje} puntos`;
+}
+
 
 /** Crea un elemento con clase y texto. El texto va con textContent: nunca se interpreta como HTML. */
 function crearElemento(etiqueta, clase, texto, atributos) {

@@ -758,3 +758,22 @@ p {
   white-space: pre-wrap;
   line-height: 1.5;
 }
+
+/* --------------------------------------------------------------------------
+   Perfil
+   -------------------------------------------------------------------------- */
+.perfil-datos {
+  display: grid;
+  grid-template-columns: max-content 1fr;   /* columna de etiquetas + columna de valores */
+  gap: 0.5rem 1.5rem;
+  margin-top: 1rem;
+}
+
+.perfil-datos dt {
+  color: var(--color-text-light);
+}
+
+.perfil-datos dd {
+  margin: 0;
+  font-weight: 500;
+}

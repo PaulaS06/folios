@@ -12,6 +12,7 @@ from data.schemas import (
     EstudianteRegistro,
     EstudianteLogin,
     EstudianteRespuesta,
+    PerfilRespuesta,
     TokenRespuesta,
 )
 from security import get_password_hash, verify_password, crear_token
@@ -110,8 +111,20 @@ def iniciar_sesion(datos: EstudianteLogin, db: Session = Depends(get_db)):
     )
 
 
-@app.get("/api/perfil", response_model=EstudianteRespuesta)
-def ver_perfil(estudiante: Estudiante = Depends(estudiante_actual)):
+@app.get("/api/perfil", response_model=PerfilRespuesta)
+def ver_perfil(
+    estudiante: Estudiante = Depends(estudiante_actual),
+    db: Session = Depends(get_db),
+):
     # Ruta protegida: solo llega aquí quien mande un token válido, y siempre
     # ve SU propio perfil (RF-09): el id sale del token, no de la URL.
-    return estudiante
+    # El estudiante guarda id_programa; para HU-09 (CA_02) se busca el nombre.
+    programa = db.get(Programa, estudiante.id_programa) if estudiante.id_programa else None
+    return {
+        "id": estudiante.id,
+        "nombre": estudiante.nombre,
+        "correo": estudiante.correo,
+        "semestre": estudiante.semestre,
+        "puntaje": estudiante.puntaje,
+        "programa": programa.nombre if programa else None,
+    }
