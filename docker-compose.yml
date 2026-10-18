@@ -1,0 +1,41 @@
+services:
+  # Base de datos: PostgreSQL con el esquema y los catálogos de db/
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: folios
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ./db:/docker-entrypoint-initdb.d:ro
+      - datos_db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d folios"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Backend: API FastAPI (imagen en Docker Hub; si no está, se construye desde el submódulo)
+  backend:
+    image: paulas06/folios-backend:latest
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/folios
+      SECRET_KEY: ${SECRET_KEY}
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # Frontend: sitio estático servido por nginx
+  frontend:
+    image: scorrea884/folios-frontend:latest
+    build: ./frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+
+volumes:
+  datos_db:
