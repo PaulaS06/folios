@@ -1,4 +1,6 @@
-# Folios
+# Folios 
+- Paula S. Meneses
+- Simon Correa
 
 Para correr el Backend 
 
