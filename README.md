@@ -167,6 +167,14 @@ npm test
 | HU-13 | Como equipo, queremos pruebas unitarias del backend para verificar las funcionalidades críticas. | Paula Meneses | Done |
 | HU-14 | Como equipo, queremos pruebas de Playwright del frontend para verificar los flujos críticos desde el navegador. | Simón Correa | Done |
 
+### Técnicas (entrega final)
+
+| ID | Historia de usuario | Responsable | Estado |
+|---|---|---|---|
+| HU-15 | Como equipo, queremos desplegar la BD, el backend y el frontend en Minikube con manifiestos versionados, para tener un entorno reproducible. | Paula Meneses y Simón Correa | Done |
+| HU-16 | Como equipo, queremos que cada push a `main` ejecute las pruebas y publique la imagen etiquetada con el commit, para que ninguna versión sin probar llegue a Docker Hub. | Paula Meneses (backend), Simón Correa (frontend) | Done (backend bloqueado por la cuenta, ver Limitaciones) |
+| HU-17 | Como equipo, queremos probes de salud en el backend, para que Kubernetes distinga entre un proceso caído y una BD no disponible. | Paula Meneses | Done |
+
 
 ## Despliegue en Kubernetes (Minikube)
 
