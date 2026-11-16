@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+spec:
+  type: NodePort          
+  selector:
+    app: folios-frontend
+  ports:
+    - port: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: folios-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: folios-frontend
+  template:
+    metadata:
+      labels:
+        app: folios-frontend
+    spec:
+      containers:
+        - name: frontend
+          image: folios-frontend:c258763
+          imagePullPolicy: IfNotPresent   
+          ports:
+            - containerPort: 80
+          readinessProbe:
+            httpGet: { path: /, port: 80 }
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /, port: 80 }
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests: { cpu: 50m, memory: 32Mi }
+            limits:   { cpu: 200m, memory: 128Mi }
