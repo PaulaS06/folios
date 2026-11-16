@@ -24,9 +24,17 @@ spec:
     spec:
       containers:
         - name: backend
-          image: paulas06/folios-backend:latest
+          image: paulas06/folios-backend:084416b
           ports:
-            - containerPort: 8000
+          - containerPort: 8000
+          readinessProbe:
+            httpGet: { path: /health/ready, port: 8000 }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /health/live, port: 8000 }
+            initialDelaySeconds: 10
+            periodSeconds: 20
           env:
             - name: POSTGRES_USER
               valueFrom:
