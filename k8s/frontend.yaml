@@ -25,7 +25,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: folios-frontend:c258763
+          image: folios-frontend:a16ad73
           imagePullPolicy: IfNotPresent   
           ports:
             - containerPort: 80

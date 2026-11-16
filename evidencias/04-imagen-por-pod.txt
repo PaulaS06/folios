@@ -1,0 +1,4 @@
+POD                                IMAGEN
+folios-backend-578d764d69-4lp59    paulas06/folios-backend:latest
+folios-db-0                        postgres:17
+folios-frontend-7944657bc9-bq972   folios-frontend:a16ad73
