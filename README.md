@@ -25,6 +25,8 @@ folios/
 ├── backend/             # Submódulo → folios-backend
 ├── frontend/            # Submódulo → folios-frontend
 ├── .env.example         # Plantilla de variables de entorno
+├── k8s/                 # Manifiestos de Kubernetes (BD, backend, frontend)
+├── evidencias/          # Salidas de comandos y capturas para la defensa
 └── README.md
 ```
 
@@ -164,3 +166,123 @@ npm test
 | HU-12 | Como equipo, queremos la base de datos con su esquema definido y un docker-compose que levante frontend, backend y BD con un solo comando. | Paula Meneses | Done |
 | HU-13 | Como equipo, queremos pruebas unitarias del backend para verificar las funcionalidades críticas. | Paula Meneses | Done |
 | HU-14 | Como equipo, queremos pruebas de Playwright del frontend para verificar los flujos críticos desde el navegador. | Simón Correa | Done |
+
+
+## Despliegue en Kubernetes (Minikube)
+
+Además de Docker Compose, el sistema se despliega en Kubernetes con los manifiestos de `k8s/`.
+
+### Arquitectura en el cluster
+
+| Componente | Recurso | Service | Exposición | Imagen |
+|---|---|---|---|---|
+| Base de datos | StatefulSet `folios-db` + PVC de 1Gi | `db` (ClusterIP, 5432) | Solo interna | `postgres:17` |
+| Backend | Deployment `folios-backend` | `backend` (ClusterIP, 8000) | Solo interna | `paulas06/folios-backend:<sha>` |
+| Frontend | Deployment `folios-frontend` | `frontend` (NodePort, 80) | **Única entrada externa** | `scorrea884/folios-frontend:<sha>` |
+
+- El navegador solo habla con **nginx**, que sirve el sitio y reenvía las rutas `/api/` al Service `backend`. La API y la base de datos no son accesibles desde fuera del cluster.
+- Las credenciales viven en el Secret `folios-secret`, que **no se versiona**: se crea a partir del `.env` local.
+- Los scripts de `db/` se montan con el ConfigMap `folios-db-init` y PostgreSQL los ejecuta la primera vez que arranca con el volumen vacío.
+- El backend tiene dos probes: **readiness** en `/health/ready` (verifica la conexión a la BD; si falla, deja de recibir tráfico) y **liveness** en `/health/live` (solo verifica que el proceso responde; si falla, se reinicia el contenedor).
+- Las imágenes usan como tag el **SHA corto del commit** del que fueron construidas, nunca `latest`.
+
+### Requisitos
+
+- **Minikube** y **kubectl**
+- **Docker Desktop** (driver de Minikube)
+
+### Cómo desplegar desde cero
+
+1. Iniciar Minikube:
+
+   ```bash
+   minikube start --driver=docker
+   ```
+
+2. Crear el `.env` a partir de la plantilla (si no existe) y crear el Secret desde él:
+
+   ```bash
+   cp .env.example .env      # y editar los valores
+   kubectl create secret generic folios-secret --from-env-file=.env
+   ```
+
+3. Desplegar la base de datos y esperar a que esté lista:
+
+   ```bash
+   kubectl apply -f k8s/db-configmap.yaml
+   kubectl apply -f k8s/db.yaml
+   kubectl rollout status statefulset/folios-db
+   ```
+
+4. Desplegar el backend y el frontend:
+
+   ```bash
+   kubectl apply -f k8s/backend.yaml
+   kubectl apply -f k8s/frontend.yaml
+   kubectl rollout status deployment/folios-backend
+   kubectl rollout status deployment/folios-frontend
+   ```
+
+5. Abrir la aplicación (dejar la terminal abierta, mantiene el túnel):
+
+   ```bash
+   minikube service frontend --url
+   ```
+
+### Verificación y diagnóstico
+
+```bash
+kubectl get pods,svc,deploy,statefulset,pvc        # estado general
+kubectl logs deploy/folios-backend --tail=50        # logs de la API
+kubectl describe pod -l app=folios-backend          # eventos y probes
+```
+
+Imagen exacta que ejecuta cada pod (trazabilidad tag → digest):
+
+```bash
+kubectl get pods -o custom-columns='POD:.metadata.name,IMAGEN:.spec.containers[0].image,DIGEST:.status.containerStatuses[0].imageID'
+```
+
+### Mantenimiento
+
+- Si cambian los scripts de `db/`, regenerar el ConfigMap:
+
+  ```bash
+  kubectl create configmap folios-db-init --from-file=db/ --dry-run=client -o yaml > k8s/db-configmap.yaml
+  ```
+
+- Reiniciar la base de datos **borrando todos los datos** (los scripts se vuelven a ejecutar):
+
+  ```bash
+  kubectl delete statefulset folios-db
+  kubectl delete pvc datos-folios-db-0
+  kubectl apply -f k8s/db.yaml
+  ```
+
+## Integración y entrega continua
+
+Cada repositorio tiene su workflow de GitHub Actions en `.github/workflows/ci.yml`:
+
+| Repositorio | Job `test` | Job `build-push` |
+|---|---|---|
+| `folios-backend` | Pruebas unitarias con pytest | Imagen multi-arquitectura (`linux/amd64`, `linux/arm64`) publicada en Docker Hub |
+| `folios-frontend` | Build de la imagen, prueba de humo de nginx y pruebas de Playwright que no dependen de la API | Ídem |
+
+- Se ejecutan en cada `push` y `pull request` a `main`.
+- `build-push` depende de `test` (`needs: test`): **si una prueba falla, no se publica la imagen**.
+- En un pull request solo se ejecutan las pruebas; la imagen se publica únicamente cuando el cambio entra a `main`.
+- Cada imagen se etiqueta con el SHA corto del commit (además de `latest`).
+
+### Cadena de entrega
+
+```
+commit en GitHub → GitHub Actions (pruebas + build) → Docker Hub (imagen:<sha>)
+                → manifiesto en k8s/ (image: ...:<sha>) → kubectl apply → pod
+```
+
+Para desplegar una versión nueva se cambia el tag en el manifiesto correspondiente de `k8s/`, se aplica con `kubectl apply` y se hace commit. El estado deseado del cluster queda versionado en Git; la aplicación al cluster es manual (no se usa una herramienta GitOps como Argo CD).
+
+### Limitaciones conocidas
+
+- La cuenta de GitHub dueña de `folios-backend` tiene GitHub Actions bloqueado por un problema de facturación ajeno al proyecto. Mientras tanto, la imagen del backend se construye con los mismos parámetros del workflow usando `docker buildx` y las pruebas se ejecutan localmente. Detalle y evidencias en `evidencias/ci-backend-bloqueo.md`.
+- Las pruebas de Playwright que requieren backend y base de datos (registro, login, publicar documento) se ejecutan contra el entorno desplegado, no en el CI del frontend.
