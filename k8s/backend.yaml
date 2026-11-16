@@ -1,0 +1,44 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+spec:
+  selector:
+    app: folios-backend
+  ports:
+    - port: 8000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: folios-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: folios-backend
+  template:
+    metadata:
+      labels:
+        app: folios-backend
+    spec:
+      containers:
+        - name: backend
+          image: paulas06/folios-backend:latest
+          ports:
+            - containerPort: 8000
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef: { name: folios-secret, key: POSTGRES_USER }
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef: { name: folios-secret, key: POSTGRES_PASSWORD }
+            - name: DATABASE_URL
+              value: postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@db:5432/folios
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef: { name: folios-secret, key: SECRET_KEY }
+          resources:
+            requests: { cpu: 100m, memory: 128Mi }
+            limits:   { cpu: 500m, memory: 256Mi }

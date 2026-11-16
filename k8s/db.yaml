@@ -1,0 +1,70 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: db
+spec:
+  selector:
+    app: folios-db         
+  ports:
+    - port: 5432            
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: folios-db
+spec:
+  serviceName: db
+  replicas: 1
+  selector:
+    matchLabels:
+      app: folios-db
+  template:
+    metadata:
+      labels:
+        app: folios-db    
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:17
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: folios
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: folios-secret
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: folios-secret  
+                  key: POSTGRES_PASSWORD
+            - name: PGDATA           
+              value: /var/lib/postgresql/data/pgdata
+          volumeMounts:
+            - name: datos
+              mountPath: /var/lib/postgresql/data
+            - name: scripts-init
+              mountPath: /docker-entrypoint-initdb.d         
+          readinessProbe:            
+            exec:
+              command: ["sh", "-c", "pg_isready -U \"$POSTGRES_USER\" -d folios"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            requests: { cpu: 100m, memory: 256Mi }
+            limits:   { cpu: 500m, memory: 512Mi }
+      volumes:
+        - name: scripts-init
+          configMap:
+            name: folios-db-init     
+  volumeClaimTemplates:
+    - metadata:
+        name: datos
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi
