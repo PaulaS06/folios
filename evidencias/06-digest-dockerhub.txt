@@ -1,0 +1,59 @@
+===== FRONTEND: lo que corre en el pod =====
+docker.io/scorrea884/folios-frontend@sha256:d2b2ba37eca6d65e39bc6f3eafa507c0d5ab32d0007717c9a997e6c85abb0a20
+===== FRONTEND: lo que publicó GitHub Actions en Docker Hub =====
+Name:      docker.io/scorrea884/folios-frontend:a00982a
+MediaType: application/vnd.oci.image.index.v1+json
+Digest:    sha256:d2b2ba37eca6d65e39bc6f3eafa507c0d5ab32d0007717c9a997e6c85abb0a20
+           
+Manifests: 
+  Name:        docker.io/scorrea884/folios-frontend:a00982a@sha256:0ef9f1097cc612091643e552dc016e243294844cbddcabe22a86ce155e15796e
+  MediaType:   application/vnd.oci.image.manifest.v1+json
+  Platform:    linux/amd64
+               
+  Name:        docker.io/scorrea884/folios-frontend:a00982a@sha256:ed2a6b90ff656e53cfa76db77475c18f22d95e159d54f9d7b105a0c5ced717da
+  MediaType:   application/vnd.oci.image.manifest.v1+json
+  Platform:    linux/arm64
+               
+  Name:        docker.io/scorrea884/folios-frontend:a00982a@sha256:0def1b3f19940c4ae74c5ca97a056ee1fb5729263c55e6f6cd41a744f0796886
+  MediaType:   application/vnd.oci.image.manifest.v1+json
+  Platform:    unknown/unknown
+  Annotations: 
+    vnd.docker.reference.digest: sha256:0ef9f1097cc612091643e552dc016e243294844cbddcabe22a86ce155e15796e
+    vnd.docker.reference.type:   attestation-manifest
+               
+  Name:        docker.io/scorrea884/folios-frontend:a00982a@sha256:81e183bb8e197e7c20b829ea700b414ef25385fe42e693a877abf108ab2b2b34
+  MediaType:   application/vnd.oci.image.manifest.v1+json
+  Platform:    unknown/unknown
+  Annotations: 
+    vnd.docker.reference.type:   attestation-manifest
+    vnd.docker.reference.digest: sha256:ed2a6b90ff656e53cfa76db77475c18f22d95e159d54f9d7b105a0c5ced717da
+
+===== BACKEND: lo que corre en el pod =====
+docker.io/paulas06/folios-backend@sha256:a72f79c07f2ef722d92dce9f6abdb9126cfc73e17648c31984710e7e877a2c23
+===== BACKEND: lo publicado en Docker Hub (build manual) =====
+Name:      docker.io/paulas06/folios-backend:084416b
+MediaType: application/vnd.oci.image.index.v1+json
+Digest:    sha256:a72f79c07f2ef722d92dce9f6abdb9126cfc73e17648c31984710e7e877a2c23
+           
+Manifests: 
+  Name:        docker.io/paulas06/folios-backend:084416b@sha256:aea4a51aa153550abc15b21ee36facd54c08b2f039b1a487e03591f4f8044839
+  MediaType:   application/vnd.oci.image.manifest.v1+json
+  Platform:    linux/amd64
+               
+  Name:        docker.io/paulas06/folios-backend:084416b@sha256:b8af0232480c7e16ebb8ac3f477a32024534d5c034a85d9895bb932bc31fb568
+  MediaType:   application/vnd.oci.image.manifest.v1+json
+  Platform:    linux/arm64
+               
+  Name:        docker.io/paulas06/folios-backend:084416b@sha256:707a1ab8316071abf4c3908fb8b61c8dcf9748a6d76f15f4958b86d8544ea0cd
+  MediaType:   application/vnd.oci.image.manifest.v1+json
+  Platform:    unknown/unknown
+  Annotations: 
+    vnd.docker.reference.digest: sha256:aea4a51aa153550abc15b21ee36facd54c08b2f039b1a487e03591f4f8044839
+    vnd.docker.reference.type:   attestation-manifest
+               
+  Name:        docker.io/paulas06/folios-backend:084416b@sha256:680270841bfeee53a9c4b69c56c644acd73ef0a92f149da18c166ac5d326e7eb
+  MediaType:   application/vnd.oci.image.manifest.v1+json
+  Platform:    unknown/unknown
+  Annotations: 
+    vnd.docker.reference.digest: sha256:b8af0232480c7e16ebb8ac3f477a32024534d5c034a85d9895bb932bc31fb568
+    vnd.docker.reference.type:   attestation-manifest

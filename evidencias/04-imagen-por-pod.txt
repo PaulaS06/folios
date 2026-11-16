@@ -1,4 +1,4 @@
-POD                                IMAGEN
-folios-backend-578d764d69-4lp59    paulas06/folios-backend:latest
-folios-db-0                        postgres:17
-folios-frontend-7944657bc9-bq972   folios-frontend:a16ad73
+POD                                IMAGEN                               DIGEST
+folios-backend-6fc7857ff9-6xrzp    paulas06/folios-backend:084416b      docker.io/paulas06/folios-backend@sha256:a72f79c07f2ef722d92dce9f6abdb9126cfc73e17648c31984710e7e877a2c23
+folios-db-0                        postgres:17                          docker.io/library/postgres@sha256:0d938e975177bef9f1f61f3f9dbcf2e0aa0a139568f66d3415ed8892eb97f6ac
+folios-frontend-697fcbf66f-2mtv7   scorrea884/folios-frontend:a00982a   docker.io/scorrea884/folios-frontend@sha256:d2b2ba37eca6d65e39bc6f3eafa507c0d5ab32d0007717c9a997e6c85abb0a20

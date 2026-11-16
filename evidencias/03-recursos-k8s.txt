@@ -1,20 +1,20 @@
-NAME                                   READY   STATUS    RESTARTS   AGE   IP            NODE       NOMINATED NODE   READINESS GATES
-pod/folios-backend-578d764d69-4lp59    1/1     Running   0          49m   10.244.0.7    minikube   <none>           <none>
-pod/folios-db-0                        1/1     Running   0          10m   10.244.0.13   minikube   <none>           <none>
-pod/folios-frontend-7944657bc9-bq972   1/1     Running   0          14m   10.244.0.10   minikube   <none>           <none>
+NAME                                   READY   STATUS    RESTARTS      AGE     IP            NODE       NOMINATED NODE   READINESS GATES
+pod/folios-backend-6fc7857ff9-6xrzp    1/1     Running   0             5m51s   10.244.0.11   minikube   <none>           <none>
+pod/folios-db-0                        1/1     Running   1 (30m ago)   7h46m   10.244.0.6    minikube   <none>           <none>
+pod/folios-frontend-697fcbf66f-2mtv7   1/1     Running   1 (29m ago)   29m     10.244.0.9    minikube   <none>           <none>
 
-NAME                 TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE   SELECTOR
-service/backend      ClusterIP   10.96.90.48     <none>        8000/TCP       49m   app=folios-backend
-service/db           ClusterIP   10.107.102.44   <none>        5432/TCP       41m   app=folios-db
-service/frontend     NodePort    10.107.63.121   <none>        80:30603/TCP   24m   app=folios-frontend
-service/kubernetes   ClusterIP   10.96.0.1       <none>        443/TCP        44h   <none>
+NAME                 TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE    SELECTOR
+service/backend      ClusterIP   10.96.90.48     <none>        8000/TCP       8h     app=folios-backend
+service/db           ClusterIP   10.107.102.44   <none>        5432/TCP       8h     app=folios-db
+service/frontend     NodePort    10.107.63.121   <none>        80:30603/TCP   8h     app=folios-frontend
+service/kubernetes   ClusterIP   10.96.0.1       <none>        443/TCP        2d4h   <none>
 
-NAME                              READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS   IMAGES                           SELECTOR
-deployment.apps/folios-backend    1/1     1            1           49m   backend      paulas06/folios-backend:latest   app=folios-backend
-deployment.apps/folios-frontend   1/1     1            1           24m   frontend     folios-frontend:a16ad73          app=folios-frontend
+NAME                              READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS   IMAGES                               SELECTOR
+deployment.apps/folios-backend    1/1     1            1           8h    backend      paulas06/folios-backend:084416b      app=folios-backend
+deployment.apps/folios-frontend   1/1     1            1           8h    frontend     scorrea884/folios-frontend:a00982a   app=folios-frontend
 
 NAME                         READY   AGE   CONTAINERS   IMAGES
-statefulset.apps/folios-db   1/1     54m   postgres     postgres:17
+statefulset.apps/folios-db   1/1     8h    postgres     postgres:17
 
 NAME                                      STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE   VOLUMEMODE
-persistentvolumeclaim/datos-folios-db-0   Bound    pvc-6bdc8126-a1ab-4f8b-acaa-c38b402992ab   1Gi        RWO            standard       <unset>                 54m   Filesystem
+persistentvolumeclaim/datos-folios-db-0   Bound    pvc-6bdc8126-a1ab-4f8b-acaa-c38b402992ab   1Gi        RWO            standard       <unset>                 8h    Filesystem
