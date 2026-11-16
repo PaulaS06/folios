@@ -39,4 +39,4 @@ tests/test_security.py::test_token_firmado_con_otra_clave_es_rechazado PASSED [1
     from starlette.testclient import TestClient as TestClient  # noqa
 
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
-======================== 27 passed, 1 warning in 2.21s =========================
+======================== 27 passed, 1 warning in 2.52s =========================
